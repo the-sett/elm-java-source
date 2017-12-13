@@ -1,0 +1,11 @@
+logs/*
+node_modules/
+tmp
+.sass-cache
+.directory
+.idea
+app/
+dist/
+elm-stuff/
+package-lock.json
+elm.js
