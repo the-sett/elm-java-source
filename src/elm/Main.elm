@@ -129,7 +129,15 @@ memberToDoc member =
             Doc.string returnType
                 |+ Doc.char ' '
                 |+ Doc.string name
+                |+ argsToDoc args
                 |+ statementsToDoc statements
+
+
+argsToDoc : List ( String, String ) -> Doc
+argsToDoc args =
+    List.map (\( jType, name ) -> Doc.string jType |+ Doc.char ' ' |+ Doc.string name) args
+        |> Doc.join (Doc.char ',')
+        |> Doc.parens
 
 
 membersToDoc : List Member -> Doc
@@ -151,11 +159,13 @@ statementToDoc statement =
 
 statementsToDoc : List Statement -> Doc
 statementsToDoc statementList =
-    List.map statementToDoc statementList
-        |> Doc.join (Doc.hardline)
-        |> Doc.indent 4
-        |> break
-        |> Doc.braces
+    Doc.hardline
+        |+ (List.map statementToDoc statementList
+                |> Doc.join (Doc.hardline)
+                |> Doc.indent 4
+                |> break
+                |> Doc.braces
+           )
 
 
 jFileToDoc : JavaFile -> Doc
