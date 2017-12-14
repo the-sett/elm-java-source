@@ -38,6 +38,10 @@ commaSpace =
     Doc.string ", "
 
 
+commaSoftline =
+    Doc.char ',' |+ Doc.softline
+
+
 maybeDoc : (a -> Doc) -> Maybe a -> Doc
 maybeDoc pretty val =
     Maybe.map pretty val
@@ -80,6 +84,7 @@ type alias JavaFile =
 
 type alias Class =
     { comment : Maybe String
+    , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
     , name : String
@@ -91,6 +96,7 @@ type alias Class =
 
 type alias Method =
     { comment : Maybe String
+    , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
     , name : String
@@ -103,12 +109,24 @@ type alias Method =
 
 type alias Field =
     { comment : Maybe String
+    , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
     , name : String
     , fieldType : String
     , initialValue : Maybe String
     }
+
+
+type alias Annotation =
+    { name : String
+    , args : List ( Maybe String, AnnotationExpr )
+    }
+
+
+type AnnotationExpr
+    = AnnExprString String
+    | AnnExpAnnotations (List Annotation)
 
 
 type alias Initializer =
@@ -166,6 +184,30 @@ javaExample =
     , imports = [ "org.springframework.core", "java.util.list" ]
     , classes =
         [ { comment = Just "Example"
+          , annotations =
+                [ { name = "Component", args = [] }
+                , { name = "Entity", args = [] }
+                , { name = "NamedQueries"
+                  , args =
+                        [ ( Nothing
+                          , AnnExpAnnotations
+                                [ { name = "NamedQuery"
+                                  , args =
+                                        [ ( Just "name", AnnExprString "\"Country.findAll\"" )
+                                        , ( Just "query", AnnExprString "\"SELECT c FROM Country c\"" )
+                                        ]
+                                  }
+                                , { name = "NamedQuery"
+                                  , args =
+                                        [ ( Just "name", AnnExprString "\"Region.findAll\"" )
+                                        , ( Just "query", AnnExprString "\"SELECT r FROM Region r\"" )
+                                        ]
+                                  }
+                                ]
+                          )
+                        ]
+                  }
+                ]
           , accessModifier = Just Public
           , modifiers = Just { defaultModifiers | final = True }
           , name = "Example"
@@ -174,6 +216,7 @@ javaExample =
           , members =
                 [ MField
                     { comment = Just "This is a field."
+                    , annotations = []
                     , accessModifier = Just Private
                     , modifiers = Just { defaultModifiers | volatile = True }
                     , name = "test"
@@ -189,6 +232,7 @@ javaExample =
                     }
                 , MConstructor
                     { comment = Just "This is a constructor."
+                    , annotations = []
                     , accessModifier = Just Public
                     , modifiers = Nothing
                     , name = "Example"
@@ -199,6 +243,11 @@ javaExample =
                     }
                 , MMethod
                     { comment = Just "This is a method."
+                    , annotations =
+                        [ { name = "Bean", args = [] }
+                        , { name = "Timed", args = [] }
+                        , { name = "UnitOfWork", args = [] }
+                        ]
                     , accessModifier = Just Public
                     , modifiers = Just { defaultModifiers | static = True }
                     , name = "main"
@@ -211,6 +260,7 @@ javaExample =
                     }
                 , MClass
                     { comment = Just "This is an inner class."
+                    , annotations = []
                     , accessModifier = Just Protected
                     , modifiers = Just { defaultModifiers | abstract = True }
                     , name = "InnerClass"
@@ -226,6 +276,45 @@ javaExample =
 
 
 -- ==== Conversion of Java AST to Doc form for pretty printing.
+
+
+annotationToDoc : Annotation -> Doc
+annotationToDoc annotation =
+    Doc.char '@'
+        |+ Doc.string annotation.name
+        |+ nonEmptyDoc annotationArgsToDoc annotation.args
+
+
+annotationsToDoc : Doc -> List Annotation -> Doc
+annotationsToDoc separator annotations =
+    List.map annotationToDoc annotations
+        |> Doc.join separator
+
+
+annotationArgToDoc : ( Maybe String, AnnotationExpr ) -> Doc
+annotationArgToDoc ( name, expr ) =
+    maybeDoc (Doc.string >> flippend (Doc.string " = ")) name
+        |+ annotationExprToDoc expr
+
+
+annotationArgsToDoc : List ( Maybe String, AnnotationExpr ) -> Doc
+annotationArgsToDoc args =
+    List.map annotationArgToDoc args
+        |> Doc.join (commaSpace)
+        |> Doc.parens
+
+
+annotationExprToDoc : AnnotationExpr -> Doc
+annotationExprToDoc expr =
+    case expr of
+        AnnExprString val ->
+            Doc.string val
+
+        AnnExpAnnotations annotations ->
+            annotationsToDoc commaSoftline annotations
+                |> Doc.indent 4
+                |> break
+                |> Doc.braces
 
 
 accessModifierToDoc : AccessModifier -> Doc
@@ -262,6 +351,7 @@ modifiersToDoc modifiers =
 classToDoc : Class -> Doc
 classToDoc class =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) class.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) class.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) class.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) class.modifiers
         |+ Doc.string "class "
@@ -309,6 +399,7 @@ membersToDoc members =
 
 fieldToDoc field =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) field.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) field.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) field.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) field.modifiers
         |+ Doc.string field.fieldType
@@ -319,6 +410,7 @@ fieldToDoc field =
 
 methodToDoc method =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) method.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) method.modifiers
         |+ maybeDoc (Doc.string >> flippend Doc.space) method.returnType
