@@ -151,16 +151,6 @@ type alias Modifiers =
     }
 
 
-defaultModifiers : Modifiers
-defaultModifiers =
-    { static = False
-    , final = False
-    , synchronized = False
-    , abstract = False
-    , volatile = False
-    }
-
-
 type Member
     = MClass Class
     | MField Field
@@ -171,6 +161,270 @@ type Member
 
 type Statement
     = Statement String
+
+
+
+-- DSL for constructing Java ASTs.
+
+
+defaultJavaFile : JavaFile
+defaultJavaFile =
+    { package = ""
+    , header = Nothing
+    , imports = []
+    , classes = []
+    }
+
+
+defaultClass : Class
+defaultClass =
+    { name = ""
+    , comment = Nothing
+    , annotations = []
+    , accessModifier = Nothing
+    , modifiers = Nothing
+    , extends = Nothing
+    , implements = []
+    , members = []
+    }
+
+
+defaultMethod : Method
+defaultMethod =
+    { name = ""
+    , comment = Nothing
+    , annotations = []
+    , accessModifier = Nothing
+    , modifiers = Nothing
+    , returnType = Nothing
+    , args = []
+    , throws = []
+    , body = []
+    }
+
+
+defaultField : Field
+defaultField =
+    { name = ""
+    , fieldType = ""
+    , comment = Nothing
+    , annotations = []
+    , accessModifier = Nothing
+    , modifiers = Nothing
+    , initialValue = Nothing
+    }
+
+
+defaultAnnotation : Annotation
+defaultAnnotation =
+    { name = ""
+    , args = []
+    }
+
+
+defaultInitializer : Initializer
+defaultInitializer =
+    { comment = Nothing
+    , modifiers = Nothing
+    , body = []
+    }
+
+
+defaultModifiers : Modifiers
+defaultModifiers =
+    { static = False
+    , final = False
+    , synchronized = False
+    , abstract = False
+    , volatile = False
+    }
+
+
+type Constructor
+    = ConsFile
+    | ConsClass
+    | ConsMethod
+    | ConsField
+    | ConsInitializer
+    | ConsConstructor
+
+
+file _ _ =
+    ConsFile
+
+
+class _ _ _ =
+    ConsClass
+
+
+method _ _ _ =
+    ConsMethod
+
+
+initializer _ _ =
+    ConsInitializer
+
+
+constructor _ _ =
+    ConsConstructor
+
+
+field _ _ _ _ =
+    ConsField
+
+
+header _ =
+    ()
+
+
+package _ =
+    ()
+
+
+imports _ =
+    ()
+
+
+comment _ =
+    ()
+
+
+public =
+    ()
+
+
+protected =
+    ()
+
+
+private =
+    ()
+
+
+static =
+    ()
+
+
+final =
+    ()
+
+
+volatile =
+    ()
+
+
+abstract =
+    ()
+
+
+extends _ =
+    ()
+
+
+implements _ =
+    ()
+
+
+body _ =
+    ()
+
+
+statement _ =
+    ()
+
+
+args _ =
+    ()
+
+
+returnType _ =
+    ()
+
+
+throws _ =
+    ()
+
+
+annotation _ _ =
+    ()
+
+
+annotationList _ =
+    ()
+
+
+annotationNameValue _ _ =
+    ()
+
+
+example =
+    file
+        [ header "Copyright blah..."
+        , package "com.thesett.example"
+        , imports
+            [ "org.springframework.core"
+            , "java.util.list"
+            ]
+        ]
+        [ class "Example"
+            [ comment "Example"
+            , public
+            , final
+            , extends "BaseClass"
+            , implements [ "Serializable", "Cloneable" ]
+            , annotation "Component" []
+            , annotation "Entity" []
+            , annotation "NamedQueries"
+                [ annotationList
+                    [ annotation "NamedQuery"
+                        [ annotationNameValue "name" "\"Country.findAll\""
+                        , annotationNameValue "query" "\"SELECT c FROM Country c\""
+                        ]
+                    , annotation "NamedQuery"
+                        [ annotationNameValue "name" "\"Region.findAll\""
+                        , annotationNameValue "query" "\"SELECT r FROM Region r\""
+                        ]
+                    ]
+                ]
+            ]
+            [ field "int"
+                "test"
+                [ comment "This is a field"
+                , private
+                , volatile
+                ]
+                []
+            , initializer
+                [ static
+                ]
+                [ body [ statement "test = 2" ] ]
+            , constructor
+                [ comment "This is a constructor"
+                , public
+                , args [ ( "int", "test" ) ]
+                , throws [ "IOException", "ClassNotFoundException" ]
+                ]
+                []
+            , method "main"
+                [ comment "This is a method."
+                , public
+                , static
+                , returnType "void"
+                , args [ ( "String[]", "args" ) ]
+                , annotation "Bean" []
+                , annotation "Timed" []
+                , annotation "UnitOfWork" []
+                ]
+                [ body [ statement "return" ] ]
+            , class "InnerClass"
+                [ comment "This is an inner class."
+                , protected
+                , abstract
+                , implements [ "Runnable" ]
+                ]
+                []
+            ]
+        ]
 
 
 
