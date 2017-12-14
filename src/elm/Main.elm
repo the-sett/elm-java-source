@@ -67,6 +67,7 @@ type alias JavaFile =
 
 type alias Class =
     { comment : Maybe String
+    , accessModifier : Maybe AccessModifier
     , name : String
     , extends : Maybe String
     , implements : List String
@@ -76,6 +77,7 @@ type alias Class =
 
 type alias Method =
     { comment : Maybe String
+    , accessModifier : Maybe AccessModifier
     , name : String
     , returnType : String
     , args : List ( String, String )
@@ -85,10 +87,17 @@ type alias Method =
 
 type alias Field =
     { comment : Maybe String
+    , accessModifier : Maybe AccessModifier
     , name : String
     , fieldType : String
     , initialValue : Maybe String
     }
+
+
+type AccessModifier
+    = Private
+    | Protected
+    | Public
 
 
 type Member
@@ -112,18 +121,21 @@ javaExample =
     , imports = [ "org.springframework.core", "java.util.list" ]
     , classes =
         [ { comment = Just "Example"
+          , accessModifier = Just Public
           , name = "Example"
           , extends = (Just "BaseClass")
           , implements = [ "Serializable" ]
           , members =
                 [ MField
                     { comment = Just "This is a field."
+                    , accessModifier = Just Private
                     , name = "test"
                     , fieldType = "int"
                     , initialValue = Nothing
                     }
                 , MMethod
                     { comment = Just "This is a method."
+                    , accessModifier = Just Public
                     , name = "main"
                     , returnType = "void"
                     , args = [ ( "String[]", "args" ) ]
@@ -133,6 +145,7 @@ javaExample =
                     }
                 , MClass
                     { comment = Just "InnerClass"
+                    , accessModifier = Just Protected
                     , name = "InnerClass"
                     , extends = Just "InnerBaseClass"
                     , implements = [ "Runnable" ]
@@ -148,9 +161,24 @@ javaExample =
 -- ==== Conversion of Java AST to Doc form for pretty printing.
 
 
+accessModifierToDoc : AccessModifier -> Doc
+accessModifierToDoc accessModifier =
+    Doc.string <|
+        case accessModifier of
+            Private ->
+                "private"
+
+            Protected ->
+                "protected"
+
+            Public ->
+                "public"
+
+
 classToDoc : Class -> Doc
 classToDoc class =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) class.comment
+        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) class.accessModifier
         |+ Doc.string "class "
         |+ Doc.string class.name
         |+ Doc.string " implements "
@@ -190,6 +218,7 @@ membersToDoc members =
 
 fieldToDoc field =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) field.comment
+        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) field.accessModifier
         |+ Doc.string field.fieldType
         |+ Doc.char ' '
         |+ Doc.string field.name
@@ -198,6 +227,7 @@ fieldToDoc field =
 
 methodToDoc method =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
+        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
         |+ Doc.string method.returnType
         |+ Doc.char ' '
         |+ Doc.string method.name
