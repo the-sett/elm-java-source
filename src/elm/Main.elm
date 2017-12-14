@@ -30,6 +30,14 @@ eol =
     Doc.char ';'
 
 
+comma =
+    Doc.char ','
+
+
+commaSpace =
+    Doc.string ", "
+
+
 maybeDoc : (a -> Doc) -> Maybe a -> Doc
 maybeDoc pretty val =
     Maybe.map pretty val
@@ -44,6 +52,11 @@ nonEmptyDoc pretty vals =
 
         _ :: _ ->
             pretty vals
+
+
+stringListToDoc : Doc -> List String -> Doc
+stringListToDoc sep vals =
+    Doc.join sep (List.map Doc.string vals)
 
 
 {-| A flipped version of append useful in function chaining situations.
@@ -68,6 +81,7 @@ type alias JavaFile =
 type alias Class =
     { comment : Maybe String
     , accessModifier : Maybe AccessModifier
+    , modifiers : Maybe Modifiers
     , name : String
     , extends : Maybe String
     , implements : List String
@@ -78,9 +92,11 @@ type alias Class =
 type alias Method =
     { comment : Maybe String
     , accessModifier : Maybe AccessModifier
+    , modifiers : Maybe Modifiers
     , name : String
     , returnType : String
     , args : List ( String, String )
+    , throws : List String
     , body : List Statement
     }
 
@@ -88,9 +104,17 @@ type alias Method =
 type alias Field =
     { comment : Maybe String
     , accessModifier : Maybe AccessModifier
+    , modifiers : Maybe Modifiers
     , name : String
     , fieldType : String
     , initialValue : Maybe String
+    }
+
+
+type alias Initializer =
+    { comment : Maybe String
+    , modifiers : Maybe Modifiers
+    , body : List Statement
     }
 
 
@@ -100,9 +124,29 @@ type AccessModifier
     | Public
 
 
+type alias Modifiers =
+    { static : Bool
+    , final : Bool
+    , synchronized : Bool
+    , abstract : Bool
+    , volatile : Bool
+    }
+
+
+defaultModifiers : Modifiers
+defaultModifiers =
+    { static = False
+    , final = False
+    , synchronized = False
+    , abstract = False
+    , volatile = False
+    }
+
+
 type Member
     = MClass Class
     | MField Field
+    | MInitializer Initializer
     | MMethod Method
 
 
@@ -116,29 +160,40 @@ type Statement
 
 javaExample : JavaFile
 javaExample =
-    { header = Just "blah"
+    { header = Just "Copyright blah..."
     , package = "com.thesett.example"
     , imports = [ "org.springframework.core", "java.util.list" ]
     , classes =
         [ { comment = Just "Example"
           , accessModifier = Just Public
+          , modifiers = Just { defaultModifiers | final = True }
           , name = "Example"
           , extends = (Just "BaseClass")
-          , implements = [ "Serializable" ]
+          , implements = [ "Serializable", "Cloneable" ]
           , members =
                 [ MField
                     { comment = Just "This is a field."
                     , accessModifier = Just Private
+                    , modifiers = Just { defaultModifiers | volatile = True }
                     , name = "test"
                     , fieldType = "int"
                     , initialValue = Nothing
                     }
+                , MInitializer
+                    { comment = Just "This is an initializer block."
+                    , modifiers = Just { defaultModifiers | static = True }
+                    , body =
+                        [ Statement "test = 2"
+                        ]
+                    }
                 , MMethod
                     { comment = Just "This is a method."
                     , accessModifier = Just Public
+                    , modifiers = Just { defaultModifiers | static = True }
                     , name = "main"
                     , returnType = "void"
                     , args = [ ( "String[]", "args" ) ]
+                    , throws = [ "IOException", "ClassNotFoundException" ]
                     , body =
                         [ Statement "return"
                         ]
@@ -146,8 +201,9 @@ javaExample =
                 , MClass
                     { comment = Just "InnerClass"
                     , accessModifier = Just Protected
+                    , modifiers = Just { defaultModifiers | abstract = True }
                     , name = "InnerClass"
-                    , extends = Just "InnerBaseClass"
+                    , extends = Nothing
                     , implements = [ "Runnable" ]
                     , members = []
                     }
@@ -175,14 +231,32 @@ accessModifierToDoc accessModifier =
                 "public"
 
 
+modifiersToDoc : Modifiers -> Doc
+modifiersToDoc modifiers =
+    let
+        flagToValList flag val =
+            if flag then
+                [ val ]
+            else
+                []
+    in
+        flagToValList modifiers.static "static"
+            |> List.append (flagToValList modifiers.final "final")
+            |> List.append (flagToValList modifiers.abstract "abstract")
+            |> List.append (flagToValList modifiers.synchronized "synchronized")
+            |> List.append (flagToValList modifiers.volatile "volatile")
+            |> stringListToDoc Doc.space
+
+
 classToDoc : Class -> Doc
 classToDoc class =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) class.comment
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) class.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) class.modifiers
         |+ Doc.string "class "
         |+ Doc.string class.name
-        |+ Doc.string " implements "
-        |+ Doc.join (Doc.string ", ") (List.map (\interface -> Doc.string interface) class.implements)
+        |+ maybeDoc (Doc.string >> Doc.append (Doc.string " extends ")) class.extends
+        |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " implements ")) class.implements
         |+ Doc.hardline
         |+ membersToDoc class.members
 
@@ -203,6 +277,9 @@ memberToDoc member =
         MField field ->
             fieldToDoc field
 
+        MInitializer initializer ->
+            initializerToDoc initializer
+
         MMethod method ->
             methodToDoc method
 
@@ -219,6 +296,7 @@ membersToDoc members =
 fieldToDoc field =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) field.comment
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) field.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) field.modifiers
         |+ Doc.string field.fieldType
         |+ Doc.char ' '
         |+ Doc.string field.name
@@ -228,17 +306,25 @@ fieldToDoc field =
 methodToDoc method =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) method.modifiers
         |+ Doc.string method.returnType
-        |+ Doc.char ' '
+        |+ Doc.space
         |+ Doc.string method.name
         |+ argsToDoc method.args
-        |+ statementsToDoc method.body
+        |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " throws ")) method.throws
+        |+ statementsToDoc True method.body
+
+
+initializerToDoc initializer =
+    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) initializer.comment
+        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) initializer.modifiers
+        |+ statementsToDoc False initializer.body
 
 
 argsToDoc : List ( String, String ) -> Doc
 argsToDoc args =
     List.map (\( jType, name ) -> Doc.string jType |+ Doc.char ' ' |+ Doc.string name) args
-        |> Doc.join (Doc.char ',')
+        |> Doc.join comma
         |> Doc.parens
 
 
@@ -250,15 +336,19 @@ statementToDoc statement =
                 |+ eol
 
 
-statementsToDoc : List Statement -> Doc
-statementsToDoc statementList =
-    Doc.hardline
-        |+ (List.map statementToDoc statementList
-                |> Doc.join (Doc.hardline)
-                |> Doc.indent 4
-                |> break
-                |> Doc.braces
-           )
+statementsToDoc : Bool -> List Statement -> Doc
+statementsToDoc newlineCurlyBrace statementList =
+    List.map statementToDoc statementList
+        |> Doc.join (Doc.hardline)
+        |> Doc.indent 4
+        |> break
+        |> Doc.braces
+        |> Doc.append
+            (if newlineCurlyBrace then
+                Doc.hardline
+             else
+                Doc.empty
+            )
 
 
 jFileToDoc : JavaFile -> Doc
