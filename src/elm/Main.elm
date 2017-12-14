@@ -94,7 +94,7 @@ type alias Method =
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
     , name : String
-    , returnType : String
+    , returnType : Maybe String
     , args : List ( String, String )
     , throws : List String
     , body : List Statement
@@ -147,6 +147,7 @@ type Member
     = MClass Class
     | MField Field
     | MInitializer Initializer
+    | MConstructor Method
     | MMethod Method
 
 
@@ -186,12 +187,22 @@ javaExample =
                         [ Statement "test = 2"
                         ]
                     }
+                , MConstructor
+                    { comment = Just "This is a constructor."
+                    , accessModifier = Just Public
+                    , modifiers = Nothing
+                    , name = "Example"
+                    , returnType = Nothing
+                    , args = [ ( "int", "test" ) ]
+                    , throws = []
+                    , body = [ Statement "this.test = test" ]
+                    }
                 , MMethod
                     { comment = Just "This is a method."
                     , accessModifier = Just Public
                     , modifiers = Just { defaultModifiers | static = True }
                     , name = "main"
-                    , returnType = "void"
+                    , returnType = Just "void"
                     , args = [ ( "String[]", "args" ) ]
                     , throws = [ "IOException", "ClassNotFoundException" ]
                     , body =
@@ -199,7 +210,7 @@ javaExample =
                         ]
                     }
                 , MClass
-                    { comment = Just "InnerClass"
+                    { comment = Just "This is an inner class."
                     , accessModifier = Just Protected
                     , modifiers = Just { defaultModifiers | abstract = True }
                     , name = "InnerClass"
@@ -280,6 +291,9 @@ memberToDoc member =
         MInitializer initializer ->
             initializerToDoc initializer
 
+        MConstructor method ->
+            methodToDoc method
+
         MMethod method ->
             methodToDoc method
 
@@ -307,8 +321,7 @@ methodToDoc method =
     maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) method.modifiers
-        |+ Doc.string method.returnType
-        |+ Doc.space
+        |+ maybeDoc (Doc.string >> flippend Doc.space) method.returnType
         |+ Doc.string method.name
         |+ argsToDoc method.args
         |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " throws ")) method.throws
