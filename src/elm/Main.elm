@@ -2,6 +2,7 @@ port module Main exposing (..)
 
 import Html exposing (Html, div, text, pre)
 import Doc exposing ((|+), Doc)
+import Maybe
 
 
 main : Html Never
@@ -29,12 +30,35 @@ eol =
     Doc.char ';'
 
 
+maybeDoc : (a -> Doc) -> Maybe a -> Doc
+maybeDoc pretty val =
+    Maybe.map pretty val
+        |> Maybe.withDefault Doc.empty
+
+
+nonEmptyDoc : (List a -> Doc) -> List a -> Doc
+nonEmptyDoc pretty vals =
+    case vals of
+        [] ->
+            Doc.empty
+
+        _ :: _ ->
+            pretty vals
+
+
+{-| A flipped version of append useful in function chaining situations.
+-}
+flippend : Doc -> Doc -> Doc
+flippend doc =
+    flip Doc.append doc
+
+
 
 -- Java model
 
 
 type alias JavaFile =
-    { header : String
+    { header : Maybe String
     , package : String
     , imports : List String
     , classes : List Class
@@ -50,10 +74,25 @@ type alias Class =
     }
 
 
+type alias Method =
+    { name : String
+    , returnType : String
+    , args : List ( String, String )
+    , body : List Statement
+    }
+
+
+type alias Field =
+    { name : String
+    , fieldType : String
+    , initialValue : Maybe String
+    }
+
+
 type Member
-    = InnerClass Class
-    | Field String String
-    | Method String String (List ( String, String )) (List Statement)
+    = MClass Class
+    | MField Field
+    | MMethod Method
 
 
 type Statement
@@ -66,7 +105,7 @@ type Statement
 
 javaExample : JavaFile
 javaExample =
-    { header = ""
+    { header = Just "blah"
     , package = "com.thesett.example"
     , imports = [ "org.springframework.core", "java.util.list" ]
     , classes =
@@ -75,13 +114,16 @@ javaExample =
           , extends = (Just "BaseClass")
           , implements = [ "Serializable" ]
           , members =
-                [ Field "int" "test"
-                , Method "main"
-                    "void"
-                    [ ( "String[]", "args" ) ]
-                    [ Statement "return"
-                    ]
-                , InnerClass
+                [ MField { name = "test", fieldType = "int", initialValue = Nothing }
+                , MMethod
+                    { name = "main"
+                    , returnType = "void"
+                    , args = [ ( "String[]", "args" ) ]
+                    , body =
+                        [ Statement "return"
+                        ]
+                    }
+                , MClass
                     { classComment = "InnerClass"
                     , name = "InnerClass"
                     , extends = Just "InnerBaseClass"
@@ -92,6 +134,10 @@ javaExample =
           }
         ]
     }
+
+
+
+-- ==== Conversion of Java AST to Doc form for pretty printing.
 
 
 classToDoc : Class -> Doc
@@ -116,28 +162,14 @@ classesToDoc classes =
 memberToDoc : Member -> Doc
 memberToDoc member =
     case member of
-        InnerClass innerClass ->
+        MClass innerClass ->
             classToDoc innerClass
 
-        Field jType name ->
-            Doc.string jType
-                |+ Doc.char ' '
-                |+ Doc.string name
-                |+ eol
+        MField field ->
+            fieldToDoc field
 
-        Method name returnType args statements ->
-            Doc.string returnType
-                |+ Doc.char ' '
-                |+ Doc.string name
-                |+ argsToDoc args
-                |+ statementsToDoc statements
-
-
-argsToDoc : List ( String, String ) -> Doc
-argsToDoc args =
-    List.map (\( jType, name ) -> Doc.string jType |+ Doc.char ' ' |+ Doc.string name) args
-        |> Doc.join (Doc.char ',')
-        |> Doc.parens
+        MMethod method ->
+            methodToDoc method
 
 
 membersToDoc : List Member -> Doc
@@ -147,6 +179,28 @@ membersToDoc members =
         |> Doc.indent 4
         |> break
         |> Doc.braces
+
+
+fieldToDoc field =
+    Doc.string field.fieldType
+        |+ Doc.char ' '
+        |+ Doc.string field.name
+        |+ eol
+
+
+methodToDoc method =
+    Doc.string method.returnType
+        |+ Doc.char ' '
+        |+ Doc.string method.name
+        |+ argsToDoc method.args
+        |+ statementsToDoc method.body
+
+
+argsToDoc : List ( String, String ) -> Doc
+argsToDoc args =
+    List.map (\( jType, name ) -> Doc.string jType |+ Doc.char ' ' |+ Doc.string name) args
+        |> Doc.join (Doc.char ',')
+        |> Doc.parens
 
 
 statementToDoc : Statement -> Doc
@@ -170,12 +224,10 @@ statementsToDoc statementList =
 
 jFileToDoc : JavaFile -> Doc
 jFileToDoc file =
-    commentMultilineToDoc file.header
-        |+ Doc.hardline
+    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) file.header
         |+ packageToDoc file.package
         |+ Doc.hardline
-        |+ importsToDoc file.imports
-        |+ Doc.hardline
+        |+ nonEmptyDoc (importsToDoc >> break) file.imports
         |+ classesToDoc file.classes
 
 
@@ -210,4 +262,3 @@ importsToDoc : List String -> Doc
 importsToDoc imports =
     List.map importToDoc imports
         |> Doc.join (Doc.hardline)
-        |> break
