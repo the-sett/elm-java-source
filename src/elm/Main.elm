@@ -66,7 +66,7 @@ type alias JavaFile =
 
 
 type alias Class =
-    { classComment : String
+    { comment : Maybe String
     , name : String
     , extends : Maybe String
     , implements : List String
@@ -75,7 +75,8 @@ type alias Class =
 
 
 type alias Method =
-    { name : String
+    { comment : Maybe String
+    , name : String
     , returnType : String
     , args : List ( String, String )
     , body : List Statement
@@ -83,7 +84,8 @@ type alias Method =
 
 
 type alias Field =
-    { name : String
+    { comment : Maybe String
+    , name : String
     , fieldType : String
     , initialValue : Maybe String
     }
@@ -109,14 +111,20 @@ javaExample =
     , package = "com.thesett.example"
     , imports = [ "org.springframework.core", "java.util.list" ]
     , classes =
-        [ { classComment = "Example"
+        [ { comment = Just "Example"
           , name = "Example"
           , extends = (Just "BaseClass")
           , implements = [ "Serializable" ]
           , members =
-                [ MField { name = "test", fieldType = "int", initialValue = Nothing }
+                [ MField
+                    { comment = Just "This is a field."
+                    , name = "test"
+                    , fieldType = "int"
+                    , initialValue = Nothing
+                    }
                 , MMethod
-                    { name = "main"
+                    { comment = Just "This is a method."
+                    , name = "main"
                     , returnType = "void"
                     , args = [ ( "String[]", "args" ) ]
                     , body =
@@ -124,7 +132,7 @@ javaExample =
                         ]
                     }
                 , MClass
-                    { classComment = "InnerClass"
+                    { comment = Just "InnerClass"
                     , name = "InnerClass"
                     , extends = Just "InnerBaseClass"
                     , implements = [ "Runnable" ]
@@ -142,8 +150,7 @@ javaExample =
 
 classToDoc : Class -> Doc
 classToDoc class =
-    commentMultilineToDoc class.classComment
-        |+ Doc.hardline
+    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) class.comment
         |+ Doc.string "class "
         |+ Doc.string class.name
         |+ Doc.string " implements "
@@ -182,14 +189,16 @@ membersToDoc members =
 
 
 fieldToDoc field =
-    Doc.string field.fieldType
+    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) field.comment
+        |+ Doc.string field.fieldType
         |+ Doc.char ' '
         |+ Doc.string field.name
         |+ eol
 
 
 methodToDoc method =
-    Doc.string method.returnType
+    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
+        |+ Doc.string method.returnType
         |+ Doc.char ' '
         |+ Doc.string method.name
         |+ argsToDoc method.args
