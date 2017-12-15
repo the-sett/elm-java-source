@@ -31,12 +31,29 @@ module JavaBuilder
         , annotate
         )
 
+{-| A DSL for building Java code as an abstract syntax tree.
+@docs JavaSource
+@docs file, class, field, initializer, constructor, method
+@docs statement, header, package, imports, comment
+@docs public, protected, private
+@docs static, final, volatile, abstract, synchronized
+@docs extends, implements
+@docs args, returnType, throws
+@docs annotation, annotationList, annotationNameValue, annotate
+-}
+
 import Internal.JavaModel exposing (..)
 import Internal.JavaSourceModel as JavaSourceModel
 
 
+{-| The type of Java source code as an abstract syntax tree.
+-}
 type alias JavaSource =
     JavaSourceModel.JavaSource
+
+
+
+-- ==== Internal types and helper functions.
 
 
 type Builder
@@ -171,111 +188,6 @@ extractMember builder =
             Nothing
 
 
-file : List Attribute -> List Builder -> JavaSource
-file attrs builders =
-    List.foldl (\attr -> \builder -> attr builder) (BuildFile defaultJavaFile) attrs
-        |> extractFile
-        |> Maybe.withDefault defaultJavaFile
-        |> (\file -> { file | classes = List.filterMap extractClass builders })
-        |> JavaSourceModel.JavaSource
-
-
-class : String -> List Attribute -> List Builder -> Builder
-class name attrs builders =
-    List.foldl (\attr -> \builder -> attr builder)
-        (BuildClass { defaultClass | members = List.filterMap extractMember builders, name = name })
-        attrs
-
-
-field : String -> String -> List Attribute -> a -> Builder
-field jType name attrs _ =
-    List.foldl (\attr -> \builder -> attr builder)
-        (BuildField { defaultField | name = name, fieldType = jType })
-        attrs
-
-
-initializer : List Attribute -> List Statement -> Builder
-initializer attrs body =
-    List.foldl (\attr -> \builder -> attr builder)
-        (BuildInitializer { defaultInitializer | body = body })
-        attrs
-
-
-constructor : List Attribute -> List Statement -> Builder
-constructor attrs body =
-    List.foldl (\attr -> \builder -> attr builder)
-        (BuildConstructor { defaultMethod | body = body })
-        attrs
-
-
-method : String -> List Attribute -> List Statement -> Builder
-method name attrs body =
-    List.foldl (\attr -> \builder -> attr builder)
-        (BuildMethod { defaultMethod | name = name, body = body })
-        attrs
-
-
-statement : String -> Statement
-statement val =
-    Statement val
-
-
-header : String -> Attribute
-header val builder =
-    case builder of
-        BuildFile file ->
-            BuildFile { file | header = Just val }
-
-        x ->
-            x
-
-
-package : String -> Attribute
-package val builder =
-    case builder of
-        BuildFile file ->
-            BuildFile { file | package = val }
-
-        x ->
-            x
-
-
-imports : List String -> Attribute
-imports imports builder =
-    case builder of
-        BuildFile file ->
-            BuildFile { file | imports = imports }
-
-        x ->
-            x
-
-
-comment : String -> Attribute
-comment val builder =
-    let
-        addComment val rec =
-            { rec | comment = Just val }
-    in
-        case builder of
-            BuildClass class ->
-                BuildClass <| addComment val class
-
-            BuildField field ->
-                BuildField <| addComment val field
-
-            BuildInitializer initializer ->
-                BuildInitializer <| addComment val initializer
-
-            BuildConstructor constructor ->
-                BuildConstructor <| addComment val constructor
-
-            BuildMethod method ->
-                BuildMethod <| addComment val method
-
-            x ->
-                x
-
-
 accessModifier : AccessModifier -> Attribute
 accessModifier accessModifier builder =
     let
@@ -297,21 +209,6 @@ accessModifier accessModifier builder =
 
             x ->
                 x
-
-
-public : Attribute
-public builder =
-    accessModifier Public builder
-
-
-protected : Attribute
-protected builder =
-    accessModifier Protected builder
-
-
-private : Attribute
-private builder =
-    accessModifier Private builder
 
 
 modifiers : Modifiers -> Attribute
@@ -355,6 +252,160 @@ modifiers modifiers builder =
                 x
 
 
+
+-- === The DSL for building Java Source code models.
+
+
+{-| Creates a file layout for a file containing Java source code.
+-}
+file : List Attribute -> List Builder -> JavaSource
+file attrs builders =
+    List.foldl (\attr -> \builder -> attr builder) (BuildFile defaultJavaFile) attrs
+        |> extractFile
+        |> Maybe.withDefault defaultJavaFile
+        |> (\file -> { file | classes = List.filterMap extractClass builders })
+        |> JavaSourceModel.JavaSource
+
+
+{-| Defines a class.
+-}
+class : String -> List Attribute -> List Builder -> Builder
+class name attrs builders =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildClass { defaultClass | members = List.filterMap extractMember builders, name = name })
+        attrs
+
+
+{-| Defines a field.
+-}
+field : String -> String -> List Attribute -> a -> Builder
+field jType name attrs _ =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildField { defaultField | name = name, fieldType = jType })
+        attrs
+
+
+{-| Defines an initializer block.
+-}
+initializer : List Attribute -> List Statement -> Builder
+initializer attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildInitializer { defaultInitializer | body = body })
+        attrs
+
+
+{-| Defines a constructor.
+-}
+constructor : List Attribute -> List Statement -> Builder
+constructor attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildConstructor { defaultMethod | body = body })
+        attrs
+
+
+{-| Defines a method.
+-}
+method : String -> List Attribute -> List Statement -> Builder
+method name attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildMethod { defaultMethod | name = name, body = body })
+        attrs
+
+
+{-| Creates a Java statement.
+-}
+statement : String -> Statement
+statement val =
+    Statement val
+
+
+{-| Defines a header comment for a file.
+-}
+header : String -> Attribute
+header val builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | header = Just val }
+
+        x ->
+            x
+
+
+{-| Sets the package name for a file.
+-}
+package : String -> Attribute
+package val builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | package = val }
+
+        x ->
+            x
+
+
+{-| Adds a list of imports to a file .
+-}
+imports : List String -> Attribute
+imports imports builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | imports = imports }
+
+        x ->
+            x
+
+
+{-| Adds a comment to a class, initializer block, method or constructor.
+-}
+comment : String -> Attribute
+comment val builder =
+    let
+        addComment val rec =
+            { rec | comment = Just val }
+    in
+        case builder of
+            BuildClass class ->
+                BuildClass <| addComment val class
+
+            BuildField field ->
+                BuildField <| addComment val field
+
+            BuildInitializer initializer ->
+                BuildInitializer <| addComment val initializer
+
+            BuildConstructor constructor ->
+                BuildConstructor <| addComment val constructor
+
+            BuildMethod method ->
+                BuildMethod <| addComment val method
+
+            x ->
+                x
+
+
+{-| Sets the 'public' access modifier.
+-}
+public : Attribute
+public builder =
+    accessModifier Public builder
+
+
+{-| Sets the 'protected' access modifier.
+-}
+protected : Attribute
+protected builder =
+    accessModifier Protected builder
+
+
+{-| Sets the 'private' access modifier.
+-}
+private : Attribute
+private builder =
+    accessModifier Private builder
+
+
+{-| Adds the 'static' modifier.
+-}
 static : Attribute
 static builder =
     let
@@ -378,6 +429,8 @@ static builder =
                 x
 
 
+{-| Adds the 'final' modifier.
+-}
 final : Attribute
 final builder =
     let
@@ -398,6 +451,8 @@ final builder =
                 x
 
 
+{-| Adds the 'volatile' modifier.
+-}
 volatile : Attribute
 volatile builder =
     let
@@ -412,6 +467,8 @@ volatile builder =
                 x
 
 
+{-| Adds the 'abstract' modifier.
+-}
 abstract : Attribute
 abstract builder =
     let
@@ -429,6 +486,8 @@ abstract builder =
                 x
 
 
+{-| Adds the 'synchronized' modifier.
+-}
 synchronized : Attribute
 synchronized builder =
     let
@@ -443,6 +502,8 @@ synchronized builder =
                 x
 
 
+{-| Adds a class that is being extended.
+-}
 extends : String -> Attribute
 extends val builder =
     case builder of
@@ -453,6 +514,8 @@ extends val builder =
             x
 
 
+{-| Adds a list of interfaces that are being implemented.
+-}
 implements : List String -> Attribute
 implements implements builder =
     case builder of
@@ -463,6 +526,8 @@ implements implements builder =
             x
 
 
+{-| Adds arguments to a method or constructor.
+-}
 args : List ( String, String ) -> Attribute
 args args builder =
     case builder of
@@ -476,6 +541,8 @@ args args builder =
             x
 
 
+{-| Sets a return type on a method.
+-}
 returnType : String -> Attribute
 returnType returnType builder =
     case builder of
@@ -486,6 +553,8 @@ returnType returnType builder =
             x
 
 
+{-| Adds a list of exceptions that can be thrown to a method or constructor.
+-}
 throws : List String -> Attribute
 throws exceptions builder =
     case builder of
@@ -499,6 +568,8 @@ throws exceptions builder =
             x
 
 
+{-| Defines an annotation.
+-}
 annotation : String -> List AnnotationBuilder -> Annotation
 annotation name annBuilders =
     List.foldl (\annBuilder -> \annotation -> annBuilder annotation)
@@ -506,16 +577,22 @@ annotation name annBuilders =
         annBuilders
 
 
+{-| Adds a list of annotations inside a parent annotation.
+-}
 annotationList : List Annotation -> AnnotationBuilder
 annotationList annotations annotation =
     { annotation | args = List.append annotation.args [ ( Nothing, AnnExpAnnotations annotations ) ] }
 
 
+{-| Adds an argument to an annotation.
+-}
 annotationNameValue : String -> String -> AnnotationBuilder
 annotationNameValue name value annotation =
     { annotation | args = List.append annotation.args [ ( Just name, AnnExprString value ) ] }
 
 
+{-| Annotates a class, field, constructor or method.
+-}
 annotate : List Annotation -> Attribute
 annotate annotations builder =
     let

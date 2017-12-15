@@ -1,5 +1,9 @@
 module JavaPrint exposing (javaSourceToString)
 
+{-| A pretty printer for Java code built with the DLS.
+@docs javaSourceToString
+-}
+
 import Doc exposing ((|+), Doc)
 import Internal.DocUtils
     exposing
@@ -17,6 +21,8 @@ import Internal.JavaModel exposing (..)
 import Internal.JavaSourceModel as JavaSourceModel
 
 
+{-| Pretty prints a Java syntax tree as text.
+-}
 javaSourceToString : JavaSourceModel.JavaSource -> String
 javaSourceToString (JavaSourceModel.JavaSource file) =
     jFileToDoc file
