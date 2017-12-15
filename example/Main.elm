@@ -33,55 +33,90 @@ javaExample =
             , annotate
                 [ annotation "Component" []
                 , annotation "Entity" []
-                , annotation "NamedQueries"
-                    [ annotationList
-                        [ annotation "NamedQuery"
-                            [ annotationNameValue "name" "\"Country.findAll\""
-                            , annotationNameValue "query" "\"SELECT c FROM Country c\""
-                            ]
-                        , annotation "NamedQuery"
-                            [ annotationNameValue "name" "\"Region.findAll\""
-                            , annotationNameValue "query" "\"SELECT r FROM Region r\""
-                            ]
-                        ]
-                    ]
+                , namedQueries
                 ]
             ]
-            [ field "int"
-                "test"
-                [ comment "This is a field"
-                , private >> volatile >> static
-                , initialValue "0"
-                ]
-            , initializer
-                [ comment "This is an initializer block."
-                , static
-                ]
-                [ statement "test = 2" ]
-            , constructor
-                [ comment "This is a constructor"
-                , public
-                , args [ ( "int", "test" ) ]
-                ]
-                [ statement "this.test = test" ]
-            , method "main"
-                [ comment "This is a method."
-                , public >> static
-                , returnType "void"
-                , args [ ( "String[]", "args" ) ]
-                , throws [ "IOException", "ClassNotFoundException" ]
-                , annotate
-                    [ annotation "Bean" []
-                    , annotation "Timed" []
-                    , annotation "UnitOfWork" [ annotationNameValue "context" "\"Mandatory\"" ]
-                    ]
-                ]
-                [ statement "return" ]
-            , class "InnerClass"
-                [ comment "This is an inner class."
-                , protected >> abstract
-                , implements [ "Runnable" ]
-                ]
-                []
+            [ staticField
+            , staticInitBlock
+            , consWithArg
+              --, mainMethod
+            , methodArgsWithAnnotation
+            , innerClass
             ]
         ]
+
+
+namedQueries =
+    annotation "NamedQueries"
+        [ annotationList
+            [ annotation "NamedQuery"
+                [ annotationNameValue "name" "\"Country.findAll\""
+                , annotationNameValue "query" "\"SELECT c FROM Country c\""
+                ]
+            , annotation "NamedQuery"
+                [ annotationNameValue "name" "\"Region.findAll\""
+                , annotationNameValue "query" "\"SELECT r FROM Region r\""
+                ]
+            ]
+        ]
+
+
+staticField =
+    field "int"
+        "test"
+        [ comment "This is a field"
+        , private >> volatile >> static
+        , initialValue "0"
+        ]
+
+
+staticInitBlock =
+    initializer
+        [ comment "This is an initializer block."
+        , static
+        ]
+        [ statement "test = 2" ]
+
+
+consWithArg =
+    constructor
+        [ comment "This is a constructor"
+        , public
+        , args [ ( "int", "test" ) ]
+        ]
+        [ statement "this.test = test" ]
+
+
+mainMethod =
+    method "main"
+        [ comment "This is a method."
+        , public >> static
+        , returnType "void"
+        , args [ ( "String[]", "args" ) ]
+        , throws [ "IOException", "ClassNotFoundException" ]
+        , annotate
+            [ annotation "Bean" []
+            , annotation "Timed" []
+            , annotation "UnitOfWork" [ annotationNameValue "context" "\"Mandatory\"" ]
+            ]
+        ]
+        [ statement "return" ]
+
+
+methodArgsWithAnnotation =
+    method "funkyDooDa"
+        [ comment "This is a method."
+        , public
+        , returnType "int"
+        , args [ ( "int", "val" ) ]
+        ]
+        [ statement "return" ]
+
+
+innerClass =
+    class "InnerClass"
+        [ comment "This is an inner class."
+        , protected >> abstract
+        , implements [ "Runnable" ]
+        ]
+        []
