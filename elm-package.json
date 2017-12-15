@@ -1,8 +1,8 @@
 {
     "version": "0.0.1",
-    "summary": "An Elm project.",
-    "repository": "https://github.com/no-user/not-a-github-project.git",
-    "license": "private",
+    "summary": "DSL and pretty printer for Java Source code.",
+    "repository": "https://github.com/the-sett/elm-java-source.git",
+    "license": "APACHE2",
     "source-directories": [
         "src/"
     ],
