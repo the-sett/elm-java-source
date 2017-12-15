@@ -13,12 +13,13 @@ main =
 
 doc : String
 doc =
-    jFileToDoc javaExample
+    jFileToDoc
+        javaExample
         |> Doc.toString
 
 
 
--- Reusable Doc functions
+-- ==== Reusable Doc functions
 
 
 break : Doc -> Doc
@@ -71,7 +72,7 @@ flippend doc =
 
 
 
--- Java model
+-- ==== Java model
 
 
 type alias JavaFile =
@@ -155,7 +156,7 @@ type Member
     = MClass Class
     | MField Field
     | MInitializer Initializer
-    | MBuilder Method
+    | MConstructor Method
     | MMethod Method
 
 
@@ -164,7 +165,24 @@ type Statement
 
 
 
--- DSL for constructing Java ASTs.
+-- ==== DSL for constructing Java ASTs.
+
+
+type Builder
+    = BuildFile JavaFile
+    | BuildClass Class
+    | BuildMethod Method
+    | BuildField Field
+    | BuildInitializer Initializer
+    | BuildConstructor Method
+
+
+type alias Attribute =
+    Builder -> Builder
+
+
+type alias AnnotationBuilder =
+    Annotation -> Annotation
 
 
 defaultJavaFile : JavaFile
@@ -240,51 +258,89 @@ defaultModifiers =
     }
 
 
-type Builder
-    = BuildFile
-    | BuildClass
-    | BuildMethod
-    | BuildField
-    | BuildInitializer
-    | BuildConstructor
+extractFile : Builder -> Maybe JavaFile
+extractFile builder =
+    case builder of
+        BuildFile file ->
+            Just file
+
+        _ ->
+            Nothing
 
 
-type alias Attribute =
-    Builder -> Builder
+extractClass : Builder -> Maybe Class
+extractClass builder =
+    case builder of
+        BuildClass class ->
+            Just class
+
+        _ ->
+            Nothing
 
 
-type alias AnnotationBuilder =
-    Annotation -> Annotation
+extractMember : Builder -> Maybe Member
+extractMember builder =
+    case builder of
+        BuildClass class ->
+            Just <| MClass class
+
+        BuildMethod method ->
+            Just <| MMethod method
+
+        BuildField field ->
+            Just <| MField field
+
+        BuildInitializer initializer ->
+            Just <| MInitializer initializer
+
+        BuildConstructor method ->
+            Just <| MConstructor method
+
+        _ ->
+            Nothing
 
 
-file : List Attribute -> List Builder -> Builder
-file _ _ =
-    BuildFile
+file : List Attribute -> List Builder -> JavaFile
+file attrs builders =
+    List.foldl (\attr -> \builder -> attr builder) (BuildFile defaultJavaFile) attrs
+        |> extractFile
+        |> Maybe.withDefault defaultJavaFile
+        |> (\file -> { file | classes = List.filterMap extractClass builders })
 
 
 class : String -> List Attribute -> List Builder -> Builder
-class _ _ _ =
-    BuildClass
+class name attrs builders =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildClass { defaultClass | members = List.filterMap extractMember builders, name = name })
+        attrs
 
 
-field : String -> String -> List Attribute -> List Builder -> Builder
-field _ _ _ _ =
-    BuildField
+field : String -> String -> List Attribute -> a -> Builder
+field jType name attrs _ =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildField { defaultField | name = name, fieldType = jType })
+        attrs
 
 
 initializer : List Attribute -> List Statement -> Builder
-initializer _ _ =
-    BuildInitializer
+initializer attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildInitializer { defaultInitializer | body = body })
+        attrs
 
 
 constructor : List Attribute -> List Statement -> Builder
-constructor _ _ =
-    BuildConstructor
+constructor attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildConstructor { defaultMethod | body = body })
+        attrs
 
 
 method : String -> List Attribute -> List Statement -> Builder
-method _ _ _ =
-    BuildMethod
+method name attrs body =
+    List.foldl (\attr -> \builder -> attr builder)
+        (BuildMethod { defaultMethod | name = name, body = body })
+        attrs
 
 
 statement : String -> Statement
@@ -293,101 +349,330 @@ statement val =
 
 
 header : String -> Attribute
-header val =
-    identity
+header val builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | header = Just val }
+
+        x ->
+            x
 
 
 package : String -> Attribute
-package val =
-    identity
+package val builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | package = val }
+
+        x ->
+            x
 
 
 imports : List String -> Attribute
-imports _ =
-    identity
+imports imports builder =
+    case builder of
+        BuildFile file ->
+            BuildFile { file | imports = imports }
+
+        x ->
+            x
 
 
 comment : String -> Attribute
-comment _ =
-    identity
+comment val builder =
+    let
+        addComment val rec =
+            { rec | comment = Just val }
+    in
+        case builder of
+            BuildClass class ->
+                BuildClass <| addComment val class
+
+            BuildField field ->
+                BuildField <| addComment val field
+
+            BuildInitializer initializer ->
+                BuildInitializer <| addComment val initializer
+
+            BuildConstructor constructor ->
+                BuildConstructor <| addComment val constructor
+
+            BuildMethod method ->
+                BuildMethod <| addComment val method
+
+            x ->
+                x
+
+
+accessModifier : AccessModifier -> Attribute
+accessModifier accessModifier builder =
+    let
+        addAccessModifier val rec =
+            { rec | accessModifier = Just val }
+    in
+        case builder of
+            BuildClass class ->
+                BuildClass <| addAccessModifier accessModifier class
+
+            BuildMethod method ->
+                BuildMethod <| addAccessModifier accessModifier method
+
+            BuildField field ->
+                BuildField <| addAccessModifier accessModifier field
+
+            BuildConstructor method ->
+                BuildConstructor <| addAccessModifier accessModifier method
+
+            x ->
+                x
 
 
 public : Attribute
-public =
-    identity
+public builder =
+    accessModifier Public builder
 
 
 protected : Attribute
-protected =
-    identity
+protected builder =
+    accessModifier Protected builder
 
 
 private : Attribute
-private =
-    identity
+private builder =
+    accessModifier Private builder
+
+
+modifiers : Modifiers -> Attribute
+modifiers modifiers builder =
+    let
+        addModifiers modsToSet rec =
+            let
+                updatedModifiers =
+                    case rec.modifiers of
+                        Nothing ->
+                            Just modsToSet
+
+                        Just existingMods ->
+                            Just
+                                { static = existingMods.static || modsToSet.static
+                                , final = existingMods.final || modsToSet.final
+                                , abstract = existingMods.abstract || modsToSet.abstract
+                                , volatile = existingMods.volatile || modsToSet.volatile
+                                , synchronized = existingMods.synchronized || modsToSet.synchronized
+                                }
+            in
+                { rec | modifiers = updatedModifiers }
+    in
+        case builder of
+            BuildClass class ->
+                BuildClass <| addModifiers modifiers class
+
+            BuildMethod method ->
+                BuildMethod <| addModifiers modifiers method
+
+            BuildField field ->
+                BuildField <| addModifiers modifiers field
+
+            BuildConstructor method ->
+                BuildConstructor <| addModifiers modifiers method
+
+            BuildInitializer initializer ->
+                BuildInitializer <| addModifiers modifiers initializer
+
+            x ->
+                x
 
 
 static : Attribute
-static =
-    identity
+static builder =
+    let
+        static =
+            { defaultModifiers | static = True }
+    in
+        case builder of
+            BuildClass _ ->
+                modifiers static builder
+
+            BuildMethod _ ->
+                modifiers static builder
+
+            BuildField _ ->
+                modifiers static builder
+
+            BuildInitializer _ ->
+                modifiers static builder
+
+            x ->
+                x
 
 
 final : Attribute
-final =
-    identity
+final builder =
+    let
+        final =
+            { defaultModifiers | final = True }
+    in
+        case builder of
+            BuildClass _ ->
+                modifiers final builder
+
+            BuildMethod _ ->
+                modifiers final builder
+
+            BuildField _ ->
+                modifiers final builder
+
+            x ->
+                x
 
 
 volatile : Attribute
-volatile =
-    identity
+volatile builder =
+    let
+        volatile =
+            { defaultModifiers | volatile = True }
+    in
+        case builder of
+            BuildField _ ->
+                modifiers volatile builder
+
+            x ->
+                x
 
 
 abstract : Attribute
-abstract =
-    identity
+abstract builder =
+    let
+        abstract =
+            { defaultModifiers | abstract = True }
+    in
+        case builder of
+            BuildClass _ ->
+                modifiers abstract builder
+
+            BuildMethod _ ->
+                modifiers abstract builder
+
+            x ->
+                x
+
+
+synchronized : Attribute
+synchronized builder =
+    let
+        synchronized =
+            { defaultModifiers | synchronized = True }
+    in
+        case builder of
+            BuildMethod _ ->
+                modifiers synchronized builder
+
+            x ->
+                x
 
 
 extends : String -> Attribute
-extends _ =
-    identity
+extends val builder =
+    case builder of
+        BuildClass class ->
+            BuildClass { class | extends = Just val }
+
+        x ->
+            x
 
 
 implements : List String -> Attribute
-implements _ =
-    identity
+implements implements builder =
+    case builder of
+        BuildClass class ->
+            BuildClass { class | implements = implements }
+
+        x ->
+            x
 
 
 args : List ( String, String ) -> Attribute
-args _ =
-    identity
+args args builder =
+    case builder of
+        BuildMethod method ->
+            BuildMethod { method | args = args }
+
+        BuildConstructor method ->
+            BuildConstructor { method | args = args }
+
+        x ->
+            x
 
 
 returnType : String -> Attribute
-returnType _ =
-    identity
+returnType returnType builder =
+    case builder of
+        BuildMethod method ->
+            BuildMethod { method | returnType = Just returnType }
+
+        x ->
+            x
 
 
 throws : List String -> Attribute
-throws _ =
-    identity
+throws exceptions builder =
+    case builder of
+        BuildMethod method ->
+            BuildMethod { method | throws = exceptions }
+
+        BuildConstructor method ->
+            BuildConstructor { method | throws = exceptions }
+
+        x ->
+            x
 
 
-annotation : String -> List AnnotationBuilder -> Attribute
-annotation _ _ =
-    identity
+annotation : String -> List AnnotationBuilder -> Annotation
+annotation name annBuilders =
+    List.foldl (\annBuilder -> \annotation -> annBuilder annotation)
+        { defaultAnnotation | name = name }
+        annBuilders
 
 
-annotationList : List Attribute -> AnnotationBuilder
-annotationList anns annotation =
-    { annotation | args = annotation.args }
+annotationList : List Annotation -> AnnotationBuilder
+annotationList annotations annotation =
+    { annotation | args = List.append annotation.args [ ( Nothing, AnnExpAnnotations annotations ) ] }
 
 
 annotationNameValue : String -> String -> AnnotationBuilder
 annotationNameValue name value annotation =
-    annotation
+    { annotation | args = List.append annotation.args [ ( Just name, AnnExprString value ) ] }
 
 
-example =
+annotate : List Annotation -> Attribute
+annotate annotations builder =
+    let
+        addAnnotations annotations rec =
+            { rec | annotations = annotations }
+    in
+        case builder of
+            BuildClass class ->
+                BuildClass <| addAnnotations annotations class
+
+            BuildMethod method ->
+                BuildMethod <| addAnnotations annotations method
+
+            BuildField field ->
+                BuildField <| addAnnotations annotations field
+
+            BuildConstructor method ->
+                BuildConstructor <| addAnnotations annotations method
+
+            x ->
+                x
+
+
+
+-- Java Examples
+
+
+javaExample : JavaFile
+javaExample =
     file
         [ header "Copyright blah..."
         , package "com.thesett.example"
@@ -398,21 +683,22 @@ example =
         ]
         [ class "Example"
             [ comment "Example"
-            , public
-            , final
+            , public >> final
             , extends "BaseClass"
             , implements [ "Serializable", "Cloneable" ]
-            , annotation "Component" []
-            , annotation "Entity" []
-            , annotation "NamedQueries"
-                [ annotationList
-                    [ annotation "NamedQuery"
-                        [ annotationNameValue "name" "\"Country.findAll\""
-                        , annotationNameValue "query" "\"SELECT c FROM Country c\""
-                        ]
-                    , annotation "NamedQuery"
-                        [ annotationNameValue "name" "\"Region.findAll\""
-                        , annotationNameValue "query" "\"SELECT r FROM Region r\""
+            , annotate
+                [ annotation "Component" []
+                , annotation "Entity" []
+                , annotation "NamedQueries"
+                    [ annotationList
+                        [ annotation "NamedQuery"
+                            [ annotationNameValue "name" "\"Country.findAll\""
+                            , annotationNameValue "query" "\"SELECT c FROM Country c\""
+                            ]
+                        , annotation "NamedQuery"
+                            [ annotationNameValue "name" "\"Region.findAll\""
+                            , annotationNameValue "query" "\"SELECT r FROM Region r\""
+                            ]
                         ]
                     ]
                 ]
@@ -420,142 +706,41 @@ example =
             [ field "int"
                 "test"
                 [ comment "This is a field"
-                , private
-                , volatile
+                , private >> volatile >> static
                 ]
                 []
             , initializer
-                [ static
+                [ comment "This is an initializer block."
+                , static
                 ]
                 [ statement "test = 2" ]
             , constructor
                 [ comment "This is a constructor"
                 , public
                 , args [ ( "int", "test" ) ]
-                , throws [ "IOException", "ClassNotFoundException" ]
                 ]
-                []
+                [ statement "this.test = test" ]
             , method "main"
                 [ comment "This is a method."
-                , public
-                , static
+                , public >> static
                 , returnType "void"
                 , args [ ( "String[]", "args" ) ]
-                , annotation "Bean" []
-                , annotation "Timed" []
-                , annotation "UnitOfWork" []
+                , throws [ "IOException", "ClassNotFoundException" ]
+                , annotate
+                    [ annotation "Bean" []
+                    , annotation "Timed" []
+                    , annotation "UnitOfWork" [ annotationNameValue "context" "\"Mandatory\"" ]
+                    ]
                 ]
                 [ statement "return" ]
             , class "InnerClass"
                 [ comment "This is an inner class."
-                , protected
-                , abstract
+                , protected >> abstract
                 , implements [ "Runnable" ]
                 ]
                 []
             ]
         ]
-
-
-
--- Java Examples
-
-
-javaExample : JavaFile
-javaExample =
-    { header = Just "Copyright blah..."
-    , package = "com.thesett.example"
-    , imports = [ "org.springframework.core", "java.util.list" ]
-    , classes =
-        [ { comment = Just "Example"
-          , annotations =
-                [ { name = "Component", args = [] }
-                , { name = "Entity", args = [] }
-                , { name = "NamedQueries"
-                  , args =
-                        [ ( Nothing
-                          , AnnExpAnnotations
-                                [ { name = "NamedQuery"
-                                  , args =
-                                        [ ( Just "name", AnnExprString "\"Country.findAll\"" )
-                                        , ( Just "query", AnnExprString "\"SELECT c FROM Country c\"" )
-                                        ]
-                                  }
-                                , { name = "NamedQuery"
-                                  , args =
-                                        [ ( Just "name", AnnExprString "\"Region.findAll\"" )
-                                        , ( Just "query", AnnExprString "\"SELECT r FROM Region r\"" )
-                                        ]
-                                  }
-                                ]
-                          )
-                        ]
-                  }
-                ]
-          , accessModifier = Just Public
-          , modifiers = Just { defaultModifiers | final = True }
-          , name = "Example"
-          , extends = (Just "BaseClass")
-          , implements = [ "Serializable", "Cloneable" ]
-          , members =
-                [ MField
-                    { comment = Just "This is a field."
-                    , annotations = []
-                    , accessModifier = Just Private
-                    , modifiers = Just { defaultModifiers | volatile = True }
-                    , name = "test"
-                    , fieldType = "int"
-                    , initialValue = Nothing
-                    }
-                , MInitializer
-                    { comment = Just "This is an initializer block."
-                    , modifiers = Just { defaultModifiers | static = True }
-                    , body =
-                        [ Statement "test = 2"
-                        ]
-                    }
-                , MBuilder
-                    { comment = Just "This is a constructor."
-                    , annotations = []
-                    , accessModifier = Just Public
-                    , modifiers = Nothing
-                    , name = "Example"
-                    , returnType = Nothing
-                    , args = [ ( "int", "test" ) ]
-                    , throws = []
-                    , body = [ Statement "this.test = test" ]
-                    }
-                , MMethod
-                    { comment = Just "This is a method."
-                    , annotations =
-                        [ { name = "Bean", args = [] }
-                        , { name = "Timed", args = [] }
-                        , { name = "UnitOfWork", args = [] }
-                        ]
-                    , accessModifier = Just Public
-                    , modifiers = Just { defaultModifiers | static = True }
-                    , name = "main"
-                    , returnType = Just "void"
-                    , args = [ ( "String[]", "args" ) ]
-                    , throws = [ "IOException", "ClassNotFoundException" ]
-                    , body =
-                        [ Statement "return"
-                        ]
-                    }
-                , MClass
-                    { comment = Just "This is an inner class."
-                    , annotations = []
-                    , accessModifier = Just Protected
-                    , modifiers = Just { defaultModifiers | abstract = True }
-                    , name = "InnerClass"
-                    , extends = Nothing
-                    , implements = [ "Runnable" ]
-                    , members = []
-                    }
-                ]
-          }
-        ]
-    }
 
 
 
@@ -665,7 +850,7 @@ memberToDoc member =
         MInitializer initializer ->
             initializerToDoc initializer
 
-        MBuilder method ->
+        MConstructor method ->
             methodToDoc method
 
         MMethod method ->
