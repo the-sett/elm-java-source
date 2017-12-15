@@ -155,7 +155,7 @@ type Member
     = MClass Class
     | MField Field
     | MInitializer Initializer
-    | MConstructor Method
+    | MBuilder Method
     | MMethod Method
 
 
@@ -240,121 +240,151 @@ defaultModifiers =
     }
 
 
-type Constructor
-    = ConsFile
-    | ConsClass
-    | ConsMethod
-    | ConsField
-    | ConsInitializer
-    | ConsConstructor
+type Builder
+    = BuildFile
+    | BuildClass
+    | BuildMethod
+    | BuildField
+    | BuildInitializer
+    | BuildConstructor
 
 
+type alias Attribute =
+    Builder -> Builder
+
+
+type alias AnnotationBuilder =
+    Annotation -> Annotation
+
+
+file : List Attribute -> List Builder -> Builder
 file _ _ =
-    ConsFile
+    BuildFile
 
 
+class : String -> List Attribute -> List Builder -> Builder
 class _ _ _ =
-    ConsClass
+    BuildClass
 
 
-method _ _ _ =
-    ConsMethod
-
-
-initializer _ _ =
-    ConsInitializer
-
-
-constructor _ _ =
-    ConsConstructor
-
-
+field : String -> String -> List Attribute -> List Builder -> Builder
 field _ _ _ _ =
-    ConsField
+    BuildField
 
 
-header _ =
-    ()
+initializer : List Attribute -> List Statement -> Builder
+initializer _ _ =
+    BuildInitializer
 
 
-package _ =
-    ()
+constructor : List Attribute -> List Statement -> Builder
+constructor _ _ =
+    BuildConstructor
 
 
+method : String -> List Attribute -> List Statement -> Builder
+method _ _ _ =
+    BuildMethod
+
+
+statement : String -> Statement
+statement val =
+    Statement val
+
+
+header : String -> Attribute
+header val =
+    identity
+
+
+package : String -> Attribute
+package val =
+    identity
+
+
+imports : List String -> Attribute
 imports _ =
-    ()
+    identity
 
 
+comment : String -> Attribute
 comment _ =
-    ()
+    identity
 
 
+public : Attribute
 public =
-    ()
+    identity
 
 
+protected : Attribute
 protected =
-    ()
+    identity
 
 
+private : Attribute
 private =
-    ()
+    identity
 
 
+static : Attribute
 static =
-    ()
+    identity
 
 
+final : Attribute
 final =
-    ()
+    identity
 
 
+volatile : Attribute
 volatile =
-    ()
+    identity
 
 
+abstract : Attribute
 abstract =
-    ()
+    identity
 
 
+extends : String -> Attribute
 extends _ =
-    ()
+    identity
 
 
+implements : List String -> Attribute
 implements _ =
-    ()
+    identity
 
 
-body _ =
-    ()
-
-
-statement _ =
-    ()
-
-
+args : List ( String, String ) -> Attribute
 args _ =
-    ()
+    identity
 
 
+returnType : String -> Attribute
 returnType _ =
-    ()
+    identity
 
 
+throws : List String -> Attribute
 throws _ =
-    ()
+    identity
 
 
+annotation : String -> List AnnotationBuilder -> Attribute
 annotation _ _ =
-    ()
+    identity
 
 
-annotationList _ =
-    ()
+annotationList : List Attribute -> AnnotationBuilder
+annotationList anns annotation =
+    { annotation | args = annotation.args }
 
 
-annotationNameValue _ _ =
-    ()
+annotationNameValue : String -> String -> AnnotationBuilder
+annotationNameValue name value annotation =
+    annotation
 
 
 example =
@@ -397,7 +427,7 @@ example =
             , initializer
                 [ static
                 ]
-                [ body [ statement "test = 2" ] ]
+                [ statement "test = 2" ]
             , constructor
                 [ comment "This is a constructor"
                 , public
@@ -415,7 +445,7 @@ example =
                 , annotation "Timed" []
                 , annotation "UnitOfWork" []
                 ]
-                [ body [ statement "return" ] ]
+                [ statement "return" ]
             , class "InnerClass"
                 [ comment "This is an inner class."
                 , protected
@@ -484,7 +514,7 @@ javaExample =
                         [ Statement "test = 2"
                         ]
                     }
-                , MConstructor
+                , MBuilder
                     { comment = Just "This is a constructor."
                     , annotations = []
                     , accessModifier = Just Public
@@ -635,7 +665,7 @@ memberToDoc member =
         MInitializer initializer ->
             initializerToDoc initializer
 
-        MConstructor method ->
+        MBuilder method ->
             methodToDoc method
 
         MMethod method ->
