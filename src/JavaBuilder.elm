@@ -25,6 +25,7 @@ module JavaBuilder
         , args
         , returnType
         , throws
+        , initialValue
         , annotation
         , annotationList
         , annotationNameValue
@@ -39,6 +40,7 @@ module JavaBuilder
 @docs static, final, volatile, abstract, synchronized
 @docs extends, implements
 @docs args, returnType, throws
+@docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotate
 -}
 
@@ -283,8 +285,8 @@ class name attrs builders =
 
 {-| Defines a field.
 -}
-field : String -> String -> List Attribute -> a -> Builder
-field jType name attrs _ =
+field : String -> String -> List Attribute -> Builder
+field jType name attrs =
     List.foldl (\attr -> \builder -> attr builder)
         (BuildField { defaultField | name = name, fieldType = jType })
         attrs
@@ -568,6 +570,18 @@ throws exceptions builder =
 
         BuildConstructor consBuilder ->
             BuildConstructor <| consBuilder >> (\method -> { method | throws = exceptions })
+
+        x ->
+            x
+
+
+{-| Sets the intial value of a field.
+-}
+initialValue : String -> Attribute
+initialValue val builder =
+    case builder of
+        BuildField field ->
+            BuildField { field | initialValue = Just val }
 
         x ->
             x

@@ -51,8 +51,8 @@ javaExample =
                 "test"
                 [ comment "This is a field"
                 , private >> volatile >> static
+                , initialValue "0"
                 ]
-                []
             , initializer
                 [ comment "This is an initializer block."
                 , static

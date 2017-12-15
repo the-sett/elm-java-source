@@ -165,6 +165,7 @@ fieldToDoc field =
         |+ Doc.string field.fieldType
         |+ Doc.char ' '
         |+ Doc.string field.name
+        |+ maybeDoc (Doc.string >> Doc.append (Doc.string " = ")) field.initialValue
         |+ eol
 
 
