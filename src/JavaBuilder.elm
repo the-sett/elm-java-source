@@ -62,7 +62,7 @@ type Builder
     | BuildMethod Method
     | BuildField Field
     | BuildInitializer Initializer
-    | BuildConstructor Method
+    | BuildConstructor (String -> Method)
 
 
 type alias Attribute =
@@ -166,8 +166,13 @@ extractClass builder =
             Nothing
 
 
-extractMember : Builder -> Maybe Member
-extractMember builder =
+{-| Extracts the members of a class from a builder.
+The class name is passed as the first argument, as it must be passed the
+constructor builder, in order that the constrctor names match the class
+in which they appear.
+-}
+extractMember : String -> Builder -> Maybe Member
+extractMember name builder =
     case builder of
         BuildClass class ->
             Just <| MClass class
@@ -181,8 +186,8 @@ extractMember builder =
         BuildInitializer initializer ->
             Just <| MInitializer initializer
 
-        BuildConstructor method ->
-            Just <| MConstructor method
+        BuildConstructor consBuilder ->
+            Just <| MConstructor <| consBuilder name
 
         _ ->
             Nothing
@@ -204,8 +209,8 @@ accessModifier accessModifier builder =
             BuildField field ->
                 BuildField <| addAccessModifier accessModifier field
 
-            BuildConstructor method ->
-                BuildConstructor <| addAccessModifier accessModifier method
+            BuildConstructor consBuilder ->
+                BuildConstructor <| consBuilder >> (addAccessModifier accessModifier)
 
             x ->
                 x
@@ -242,8 +247,8 @@ modifiers modifiers builder =
             BuildField field ->
                 BuildField <| addModifiers modifiers field
 
-            BuildConstructor method ->
-                BuildConstructor <| addModifiers modifiers method
+            BuildConstructor consBuilder ->
+                BuildConstructor <| consBuilder >> (addModifiers modifiers)
 
             BuildInitializer initializer ->
                 BuildInitializer <| addModifiers modifiers initializer
@@ -272,7 +277,7 @@ file attrs builders =
 class : String -> List Attribute -> List Builder -> Builder
 class name attrs builders =
     List.foldl (\attr -> \builder -> attr builder)
-        (BuildClass { defaultClass | members = List.filterMap extractMember builders, name = name })
+        (BuildClass { defaultClass | members = List.filterMap (extractMember name) builders, name = name })
         attrs
 
 
@@ -299,7 +304,7 @@ initializer attrs body =
 constructor : List Attribute -> List Statement -> Builder
 constructor attrs body =
     List.foldl (\attr -> \builder -> attr builder)
-        (BuildConstructor { defaultMethod | body = body })
+        (BuildConstructor (\name -> { defaultMethod | name = name, body = body }))
         attrs
 
 
@@ -373,8 +378,8 @@ comment val builder =
             BuildInitializer initializer ->
                 BuildInitializer <| addComment val initializer
 
-            BuildConstructor constructor ->
-                BuildConstructor <| addComment val constructor
+            BuildConstructor consBuilder ->
+                BuildConstructor <| consBuilder >> (addComment val)
 
             BuildMethod method ->
                 BuildMethod <| addComment val method
@@ -534,8 +539,8 @@ args args builder =
         BuildMethod method ->
             BuildMethod { method | args = args }
 
-        BuildConstructor method ->
-            BuildConstructor { method | args = args }
+        BuildConstructor consBuilder ->
+            BuildConstructor <| consBuilder >> (\method -> { method | args = args })
 
         x ->
             x
@@ -561,8 +566,8 @@ throws exceptions builder =
         BuildMethod method ->
             BuildMethod { method | throws = exceptions }
 
-        BuildConstructor method ->
-            BuildConstructor { method | throws = exceptions }
+        BuildConstructor consBuilder ->
+            BuildConstructor <| consBuilder >> (\method -> { method | throws = exceptions })
 
         x ->
             x
@@ -609,8 +614,8 @@ annotate annotations builder =
             BuildField field ->
                 BuildField <| addAnnotations annotations field
 
-            BuildConstructor method ->
-                BuildConstructor <| addAnnotations annotations method
+            BuildConstructor consBuilder ->
+                BuildConstructor <| consBuilder >> (addAnnotations annotations)
 
             x ->
                 x
