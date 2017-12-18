@@ -231,7 +231,10 @@ best w k x =
                     NLine i <| be w i ds
 
                 ( i, Union doc doc2 ) :: ds ->
-                    better w k (be w k <| ( i, doc ) :: ds) (be w k <| ( i, doc2 ) :: ds)
+                    better w
+                        k
+                        (be w k <| ( i, doc ) :: ds)
+                        (\() -> (be w k <| ( i, doc2 ) :: ds))
 
                 ( i, Nesting fn ) :: ds ->
                     be w k <| ( i, fn i ) :: ds
@@ -242,12 +245,12 @@ best w k x =
         be w k [ ( 0, x ) ]
 
 
-better : Int -> Int -> Normal -> Normal -> Normal
-better w k doc doc2 =
+better : Int -> Int -> Normal -> (() -> Normal) -> Normal
+better w k doc doc2Fn =
     if fits (w - k) doc then
         doc
     else
-        doc2
+        doc2Fn ()
 
 
 fits : Int -> Normal -> Bool
