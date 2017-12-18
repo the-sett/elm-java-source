@@ -39,7 +39,7 @@ javaExample =
             [ staticField
             , staticInitBlock
             , consWithArg
-              --, mainMethod
+            , mainMethod
             , methodArgsWithAnnotation
             , innerClass
             ]

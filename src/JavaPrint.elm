@@ -4,7 +4,7 @@ module JavaPrint exposing (javaSourceToString)
 @docs javaSourceToString
 -}
 
-import Doc exposing ((|+), Doc)
+import Pretty as Doc exposing ((|+), Doc)
 import Internal.DocUtils
     exposing
         ( break
@@ -26,14 +26,14 @@ import Internal.JavaSourceModel as JavaSourceModel
 javaSourceToString : JavaSourceModel.JavaSource -> String
 javaSourceToString (JavaSourceModel.JavaSource file) =
     jFileToDoc file
-        |> Doc.toString
+        |> Doc.pretty 120
 
 
 jFileToDoc : JavaFile -> Doc
 jFileToDoc file =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) file.header
+    maybeDoc (commentMultilineToDoc >> flippend Doc.line) file.header
         |+ packageToDoc file.package
-        |+ Doc.hardline
+        |+ Doc.line
         |+ nonEmptyDoc (importsToDoc >> break) file.imports
         |+ classesToDoc file.classes
 
@@ -110,22 +110,22 @@ modifiersToDoc modifiers =
 
 classToDoc : Class -> Doc
 classToDoc class =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) class.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) class.annotations
+    maybeDoc (commentMultilineToDoc >> flippend Doc.line) class.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) class.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) class.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) class.modifiers
         |+ Doc.string "class "
         |+ Doc.string class.name
         |+ maybeDoc (Doc.string >> Doc.append (Doc.string " extends ")) class.extends
         |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " implements ")) class.implements
-        |+ Doc.hardline
+        |+ Doc.line
         |+ membersToDoc class.members
 
 
 classesToDoc : List Class -> Doc
 classesToDoc classes =
     List.map classToDoc classes
-        |> Doc.join (Doc.hardline)
+        |> Doc.join (Doc.line)
         |> break
 
 
@@ -151,15 +151,15 @@ memberToDoc member =
 membersToDoc : List Member -> Doc
 membersToDoc members =
     List.map memberToDoc members
-        |> Doc.join (Doc.hardline |+ Doc.hardline)
+        |> Doc.join (Doc.line |+ Doc.line)
         |> Doc.indent 4
         |> break
         |> Doc.braces
 
 
 fieldToDoc field =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) field.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) field.annotations
+    maybeDoc (commentMultilineToDoc >> flippend Doc.line) field.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) field.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) field.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) field.modifiers
         |+ Doc.string field.fieldType
@@ -170,8 +170,8 @@ fieldToDoc field =
 
 
 methodToDoc method =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) method.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.hardline >> flippend Doc.hardline) method.annotations
+    maybeDoc (commentMultilineToDoc >> flippend Doc.line) method.comment
+        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) method.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) method.modifiers
         |+ maybeDoc (Doc.string >> flippend Doc.space) method.returnType
@@ -182,7 +182,7 @@ methodToDoc method =
 
 
 initializerToDoc initializer =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.hardline) initializer.comment
+    maybeDoc (commentMultilineToDoc >> flippend Doc.line) initializer.comment
         |+ maybeDoc (modifiersToDoc >> flippend Doc.space) initializer.modifiers
         |+ statementsToDoc False initializer.body
 
@@ -205,13 +205,13 @@ statementToDoc statement =
 statementsToDoc : Bool -> List Statement -> Doc
 statementsToDoc newlineCurlyBrace statementList =
     List.map statementToDoc statementList
-        |> Doc.join (Doc.hardline)
+        |> Doc.join (Doc.line)
         |> Doc.indent 4
         |> break
         |> Doc.braces
         |> Doc.append
             (if newlineCurlyBrace then
-                Doc.hardline
+                Doc.line
              else
                 Doc.empty
             )
@@ -247,4 +247,4 @@ importToDoc importName =
 importsToDoc : List String -> Doc
 importsToDoc imports =
     List.map importToDoc imports
-        |> Doc.join (Doc.hardline)
+        |> Doc.join (Doc.line)

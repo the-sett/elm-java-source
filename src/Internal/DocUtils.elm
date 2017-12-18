@@ -11,7 +11,7 @@ module Internal.DocUtils
         , commaSoftline
         )
 
-import Doc exposing ((|+), Doc)
+import Pretty as Doc exposing ((|+), Doc)
 
 
 {-| A flipped version of append useful in function chaining situations.
@@ -23,7 +23,7 @@ flippend doc =
 
 break : Doc -> Doc
 break =
-    Doc.surround Doc.hardline Doc.hardline
+    Doc.surround Doc.line Doc.line
 
 
 eol =
