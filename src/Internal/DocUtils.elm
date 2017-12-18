@@ -11,48 +11,48 @@ module Internal.DocUtils
         , commaSoftline
         )
 
-import Pretty as Doc exposing ((|+), Doc)
+import Pretty exposing ((|+), Doc)
 
 
 {-| A flipped version of append useful in function chaining situations.
 -}
 flippend : Doc -> Doc -> Doc
 flippend doc =
-    flip Doc.append doc
+    flip Pretty.append doc
 
 
 break : Doc -> Doc
 break =
-    Doc.surround Doc.line Doc.line
+    Pretty.surround Pretty.line Pretty.line
 
 
 eol =
-    Doc.char ';'
+    Pretty.char ';'
 
 
 comma =
-    Doc.char ','
+    Pretty.char ','
 
 
 commaSpace =
-    Doc.string ", "
+    Pretty.string ", "
 
 
 commaSoftline =
-    Doc.char ',' |+ Doc.softline
+    Pretty.char ',' |+ Pretty.softline
 
 
 maybeDoc : (a -> Doc) -> Maybe a -> Doc
 maybeDoc pretty val =
     Maybe.map pretty val
-        |> Maybe.withDefault Doc.empty
+        |> Maybe.withDefault Pretty.empty
 
 
 nonEmptyDoc : (List a -> Doc) -> List a -> Doc
 nonEmptyDoc pretty vals =
     case vals of
         [] ->
-            Doc.empty
+            Pretty.empty
 
         _ :: _ ->
             pretty vals
@@ -60,4 +60,4 @@ nonEmptyDoc pretty vals =
 
 stringListToDoc : Doc -> List String -> Doc
 stringListToDoc sep vals =
-    Doc.join sep (List.map Doc.string vals)
+    Pretty.join sep (List.map Pretty.string vals)

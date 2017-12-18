@@ -4,7 +4,7 @@ module JavaPrint exposing (javaSourceToString)
 @docs javaSourceToString
 -}
 
-import Pretty as Doc exposing ((|+), Doc)
+import Pretty exposing ((|+), Doc)
 import Internal.DocUtils
     exposing
         ( break
@@ -26,60 +26,60 @@ import Internal.JavaSourceModel as JavaSourceModel
 javaSourceToString : JavaSourceModel.JavaSource -> String
 javaSourceToString (JavaSourceModel.JavaSource file) =
     jFileToDoc file
-        |> Doc.pretty 120
+        |> Pretty.pretty 120
 
 
 jFileToDoc : JavaFile -> Doc
 jFileToDoc file =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.line) file.header
+    maybeDoc (commentMultilineToDoc >> flippend Pretty.line) file.header
         |+ packageToDoc file.package
-        |+ Doc.line
+        |+ Pretty.line
         |+ nonEmptyDoc (importsToDoc >> break) file.imports
         |+ classesToDoc file.classes
 
 
 annotationToDoc : Annotation -> Doc
 annotationToDoc annotation =
-    Doc.char '@'
-        |+ Doc.string annotation.name
+    Pretty.char '@'
+        |+ Pretty.string annotation.name
         |+ nonEmptyDoc annotationArgsToDoc annotation.args
 
 
 annotationsToDoc : Doc -> List Annotation -> Doc
 annotationsToDoc separator annotations =
     List.map annotationToDoc annotations
-        |> Doc.join separator
+        |> Pretty.join separator
 
 
 annotationArgToDoc : ( Maybe String, AnnotationExpr ) -> Doc
 annotationArgToDoc ( name, expr ) =
-    maybeDoc (Doc.string >> flippend (Doc.string " = ")) name
+    maybeDoc (Pretty.string >> flippend (Pretty.string " = ")) name
         |+ annotationExprToDoc expr
 
 
 annotationArgsToDoc : List ( Maybe String, AnnotationExpr ) -> Doc
 annotationArgsToDoc args =
     List.map annotationArgToDoc args
-        |> Doc.join (commaSpace)
-        |> Doc.parens
+        |> Pretty.join (commaSpace)
+        |> Pretty.parens
 
 
 annotationExprToDoc : AnnotationExpr -> Doc
 annotationExprToDoc expr =
     case expr of
         AnnExprString val ->
-            Doc.string val
+            Pretty.string val
 
         AnnExpAnnotations annotations ->
             annotationsToDoc commaSoftline annotations
-                |> Doc.indent 4
+                |> Pretty.indent 4
                 |> break
-                |> Doc.braces
+                |> Pretty.braces
 
 
 accessModifierToDoc : AccessModifier -> Doc
 accessModifierToDoc accessModifier =
-    Doc.string <|
+    Pretty.string <|
         case accessModifier of
             Private ->
                 "private"
@@ -105,27 +105,27 @@ modifiersToDoc modifiers =
             |> List.append (flagToValList modifiers.abstract "abstract")
             |> List.append (flagToValList modifiers.synchronized "synchronized")
             |> List.append (flagToValList modifiers.volatile "volatile")
-            |> stringListToDoc Doc.space
+            |> stringListToDoc Pretty.space
 
 
 classToDoc : Class -> Doc
 classToDoc class =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.line) class.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) class.annotations
-        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) class.accessModifier
-        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) class.modifiers
-        |+ Doc.string "class "
-        |+ Doc.string class.name
-        |+ maybeDoc (Doc.string >> Doc.append (Doc.string " extends ")) class.extends
-        |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " implements ")) class.implements
-        |+ Doc.line
+    maybeDoc (commentMultilineToDoc >> flippend Pretty.line) class.comment
+        |+ nonEmptyDoc (annotationsToDoc Pretty.line >> flippend Pretty.line) class.annotations
+        |+ maybeDoc (accessModifierToDoc >> flippend Pretty.space) class.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Pretty.space) class.modifiers
+        |+ Pretty.string "class "
+        |+ Pretty.string class.name
+        |+ maybeDoc (Pretty.string >> Pretty.append (Pretty.string " extends ")) class.extends
+        |+ nonEmptyDoc (stringListToDoc commaSpace >> Pretty.append (Pretty.string " implements ")) class.implements
+        |+ Pretty.line
         |+ membersToDoc class.members
 
 
 classesToDoc : List Class -> Doc
 classesToDoc classes =
     List.map classToDoc classes
-        |> Doc.join (Doc.line)
+        |> Pretty.join (Pretty.line)
         |> break
 
 
@@ -151,100 +151,100 @@ memberToDoc member =
 membersToDoc : List Member -> Doc
 membersToDoc members =
     List.map memberToDoc members
-        |> Doc.join (Doc.line |+ Doc.line)
-        |> Doc.indent 4
+        |> Pretty.join (Pretty.line |+ Pretty.line)
+        |> Pretty.indent 4
         |> break
-        |> Doc.braces
+        |> Pretty.braces
 
 
 fieldToDoc field =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.line) field.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) field.annotations
-        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) field.accessModifier
-        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) field.modifiers
-        |+ Doc.string field.fieldType
-        |+ Doc.char ' '
-        |+ Doc.string field.name
-        |+ maybeDoc (Doc.string >> Doc.append (Doc.string " = ")) field.initialValue
+    maybeDoc (commentMultilineToDoc >> flippend Pretty.line) field.comment
+        |+ nonEmptyDoc (annotationsToDoc Pretty.line >> flippend Pretty.line) field.annotations
+        |+ maybeDoc (accessModifierToDoc >> flippend Pretty.space) field.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Pretty.space) field.modifiers
+        |+ Pretty.string field.fieldType
+        |+ Pretty.char ' '
+        |+ Pretty.string field.name
+        |+ maybeDoc (Pretty.string >> Pretty.append (Pretty.string " = ")) field.initialValue
         |+ eol
 
 
 methodToDoc method =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.line) method.comment
-        |+ nonEmptyDoc (annotationsToDoc Doc.line >> flippend Doc.line) method.annotations
-        |+ maybeDoc (accessModifierToDoc >> flippend Doc.space) method.accessModifier
-        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) method.modifiers
-        |+ maybeDoc (Doc.string >> flippend Doc.space) method.returnType
-        |+ Doc.string method.name
+    maybeDoc (commentMultilineToDoc >> flippend Pretty.line) method.comment
+        |+ nonEmptyDoc (annotationsToDoc Pretty.line >> flippend Pretty.line) method.annotations
+        |+ maybeDoc (accessModifierToDoc >> flippend Pretty.space) method.accessModifier
+        |+ maybeDoc (modifiersToDoc >> flippend Pretty.space) method.modifiers
+        |+ maybeDoc (Pretty.string >> flippend Pretty.space) method.returnType
+        |+ Pretty.string method.name
         |+ argsToDoc method.args
-        |+ nonEmptyDoc (stringListToDoc commaSpace >> Doc.append (Doc.string " throws ")) method.throws
+        |+ nonEmptyDoc (stringListToDoc commaSpace >> Pretty.append (Pretty.string " throws ")) method.throws
         |+ statementsToDoc True method.body
 
 
 initializerToDoc initializer =
-    maybeDoc (commentMultilineToDoc >> flippend Doc.line) initializer.comment
-        |+ maybeDoc (modifiersToDoc >> flippend Doc.space) initializer.modifiers
+    maybeDoc (commentMultilineToDoc >> flippend Pretty.line) initializer.comment
+        |+ maybeDoc (modifiersToDoc >> flippend Pretty.space) initializer.modifiers
         |+ statementsToDoc False initializer.body
 
 
 argsToDoc : List ( String, String ) -> Doc
 argsToDoc args =
-    List.map (\( jType, name ) -> Doc.string jType |+ Doc.char ' ' |+ Doc.string name) args
-        |> Doc.join comma
-        |> Doc.parens
+    List.map (\( jType, name ) -> Pretty.string jType |+ Pretty.char ' ' |+ Pretty.string name) args
+        |> Pretty.join comma
+        |> Pretty.parens
 
 
 statementToDoc : Statement -> Doc
 statementToDoc statement =
     case statement of
         Statement expr ->
-            Doc.string expr
+            Pretty.string expr
                 |+ eol
 
 
 statementsToDoc : Bool -> List Statement -> Doc
 statementsToDoc newlineCurlyBrace statementList =
     List.map statementToDoc statementList
-        |> Doc.join (Doc.line)
-        |> Doc.indent 4
+        |> Pretty.join (Pretty.line)
+        |> Pretty.indent 4
         |> break
-        |> Doc.braces
-        |> Doc.append
+        |> Pretty.braces
+        |> Pretty.append
             (if newlineCurlyBrace then
-                Doc.line
+                Pretty.line
              else
-                Doc.empty
+                Pretty.empty
             )
 
 
 commentMultilineToDoc : String -> Doc
 commentMultilineToDoc comment =
-    Doc.string "/* "
-        |+ Doc.string comment
-        |+ Doc.string " */"
+    Pretty.string "/* "
+        |+ Pretty.string comment
+        |+ Pretty.string " */"
 
 
 commentToDoc : String -> Doc
 commentToDoc comment =
-    Doc.string "// "
-        |+ Doc.string comment
+    Pretty.string "// "
+        |+ Pretty.string comment
 
 
 packageToDoc : String -> Doc
 packageToDoc package =
-    Doc.string "package "
-        |+ Doc.string package
+    Pretty.string "package "
+        |+ Pretty.string package
         |+ eol
 
 
 importToDoc : String -> Doc
 importToDoc importName =
-    Doc.string "import "
-        |+ Doc.string importName
+    Pretty.string "import "
+        |+ Pretty.string importName
         |+ eol
 
 
 importsToDoc : List String -> Doc
 importsToDoc imports =
     List.map importToDoc imports
-        |> Doc.join (Doc.line)
+        |> Pretty.join (Pretty.line)
