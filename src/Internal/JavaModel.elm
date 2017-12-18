@@ -41,7 +41,7 @@ type alias Method =
     , modifiers : Maybe Modifiers
     , name : String
     , returnType : Maybe String
-    , args : List ( String, String )
+    , args : List ( String, String, List Annotation )
     , throws : List String
     , body : List Statement
     }

@@ -23,6 +23,8 @@ module JavaBuilder
         , extends
         , implements
         , args
+        , arg
+        , annArg
         , returnType
         , throws
         , initialValue
@@ -39,7 +41,7 @@ module JavaBuilder
 @docs public, protected, private
 @docs static, final, volatile, abstract, synchronized
 @docs extends, implements
-@docs args, returnType, throws
+@docs args, arg, annArg, returnType, throws
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotate
 -}
@@ -535,7 +537,7 @@ implements implements builder =
 
 {-| Adds arguments to a method or constructor.
 -}
-args : List ( String, String ) -> Attribute
+args : List ( String, String, List Annotation ) -> Attribute
 args args builder =
     case builder of
         BuildMethod method ->
@@ -546,6 +548,20 @@ args args builder =
 
         x ->
             x
+
+
+{-| Creates an argument with no annotation
+-}
+arg : ( String, String ) -> ( String, String, List Annotation )
+arg ( jType, name ) =
+    ( jType, name, [] )
+
+
+{-| Creates an argument with annotations
+-}
+annArg : ( String, String, List Annotation ) -> ( String, String, List Annotation )
+annArg =
+    identity
 
 
 {-| Sets a return type on a method.

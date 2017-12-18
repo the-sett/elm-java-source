@@ -163,7 +163,7 @@ fieldToDoc field =
         |+ maybeDoc (accessModifierToDoc >> flippend Pretty.space) field.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend Pretty.space) field.modifiers
         |+ Pretty.string field.fieldType
-        |+ Pretty.char ' '
+        |+ Pretty.space
         |+ Pretty.string field.name
         |+ maybeDoc (Pretty.string >> Pretty.append (Pretty.string " = ")) field.initialValue
         |+ eol
@@ -187,10 +187,17 @@ initializerToDoc initializer =
         |+ statementsToDoc False initializer.body
 
 
-argsToDoc : List ( String, String ) -> Doc
+argsToDoc : List ( String, String, List Annotation ) -> Doc
 argsToDoc args =
-    List.map (\( jType, name ) -> Pretty.string jType |+ Pretty.char ' ' |+ Pretty.string name) args
-        |> Pretty.join comma
+    List.map
+        (\( jType, name, annotations ) ->
+            nonEmptyDoc (annotationsToDoc Pretty.softline >> flippend Pretty.space) annotations
+                |+ Pretty.string jType
+                |+ Pretty.space
+                |+ Pretty.string name
+        )
+        args
+        |> Pretty.join commaSpace
         |> Pretty.parens
 
 

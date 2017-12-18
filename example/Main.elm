@@ -82,7 +82,7 @@ consWithArg =
     constructor
         [ comment "This is a constructor"
         , public
-        , args [ ( "int", "test" ) ]
+        , args [ arg ( "int", "test" ) ]
         ]
         [ statement "this.test = test" ]
 
@@ -92,7 +92,7 @@ mainMethod =
         [ comment "This is a method."
         , public >> static
         , returnType "void"
-        , args [ ( "String[]", "args" ) ]
+        , args [ arg ( "String[]", "args" ) ]
         , throws [ "IOException", "ClassNotFoundException" ]
         , annotate
             [ annotation "Bean" []
@@ -108,7 +108,7 @@ methodArgsWithAnnotation =
         [ comment "This is a method."
         , public
         , returnType "int"
-        , args [ ( "int", "val" ) ]
+        , args [ arg ( "int", "val" ), annArg ( "String", "id", [ annotation "NotNull" [] ] ) ]
         ]
         [ statement "return" ]
 
