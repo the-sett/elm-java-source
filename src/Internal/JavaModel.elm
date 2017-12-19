@@ -1,6 +1,7 @@
 module Internal.JavaModel
     exposing
-        ( JavaFile
+        ( JavaSource(..)
+        , JavaFile
         , Class
         , Method
         , Field
@@ -12,6 +13,10 @@ module Internal.JavaModel
         , Modifiers
         , AccessModifier(..)
         )
+
+
+type JavaSource
+    = JavaSource JavaFile
 
 
 type alias JavaFile =

@@ -35,13 +35,12 @@ import Internal.DocUtils
         , commaSoftline
         )
 import Internal.JavaModel exposing (..)
-import Internal.JavaSourceModel as JavaSourceModel
 
 
 {-| Pretty prints a Java syntax tree as text.
 -}
-javaSourceToString : JavaSourceModel.JavaSource -> String
-javaSourceToString (JavaSourceModel.JavaSource file) =
+javaSourceToString : JavaSource -> String
+javaSourceToString (JavaSource file) =
     jFileToDoc file
         |> pretty 120
 

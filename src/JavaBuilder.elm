@@ -47,13 +47,12 @@ module JavaBuilder
 -}
 
 import Internal.JavaModel exposing (..)
-import Internal.JavaSourceModel as JavaSourceModel
 
 
 {-| The type of Java source code as an abstract syntax tree.
 -}
 type alias JavaSource =
-    JavaSourceModel.JavaSource
+    Internal.JavaModel.JavaSource
 
 
 
@@ -273,7 +272,7 @@ file attrs builders =
         |> extractFile
         |> Maybe.withDefault defaultJavaFile
         |> (\file -> { file | classes = List.filterMap extractClass builders })
-        |> JavaSourceModel.JavaSource
+        |> JavaSource
 
 
 {-| Defines a class.
