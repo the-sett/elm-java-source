@@ -21,8 +21,8 @@ javaExample =
         [ header "Copyright blah..."
         , package "com.thesett.example"
         , imports
-            [ "org.springframework.core"
-            , "java.util.list"
+            [ "org.springframework.core.Component"
+            , "java.util.List"
             ]
         ]
         [ class "Example"
@@ -75,7 +75,7 @@ staticInitBlock =
         [ comment "This is an initializer block."
         , static
         ]
-        [ statement "test = 2" ]
+        [ assign "test" (int 2) ]
 
 
 consWithArg =
@@ -84,7 +84,7 @@ consWithArg =
         , public
         , args [ arg ( "int", "test" ) ]
         ]
-        [ statement "this.test = test" ]
+        [ assign "this.test" (var "test") ]
 
 
 mainMethod =
@@ -100,7 +100,7 @@ mainMethod =
             , annotation "UnitOfWork" [ annotationNameValue "context" "\"Mandatory\"" ]
             ]
         ]
-        [ statement "return" ]
+        []
 
 
 methodArgsWithAnnotation =
@@ -110,7 +110,7 @@ methodArgsWithAnnotation =
         , returnType "int"
         , args [ arg ( "int", "val" ), annArg ( "String", "id", [ annotation "NotNull" [] ] ) ]
         ]
-        [ statement "return" ]
+        [ forloop ]
 
 
 innerClass =
@@ -120,3 +120,16 @@ innerClass =
         , implements [ "Runnable" ]
         ]
         []
+
+
+
+-- interface
+-- enum
+-- generics - declaration
+
+
+forloop =
+    for ( assign "i" (int 0), lt (var "i") (int 20), postIncr "i" )
+        [ assign "next" (plus (var "i") (int 1))
+        , invoke "System.out.println" [ plus (string "i is ") (var "i") ]
+        ]

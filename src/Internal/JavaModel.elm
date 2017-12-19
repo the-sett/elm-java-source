@@ -8,10 +8,11 @@ module Internal.JavaModel
         , Initializer
         , Annotation
         , AnnotationExpr(..)
-        , Statement(..)
         , Member(..)
         , Modifiers
         , AccessModifier(..)
+        , Expr(..)
+        , Statement(..)
         )
 
 
@@ -104,5 +105,13 @@ type Member
     | MMethod Method
 
 
+type Expr
+    = ExprStringLit String
+    | ExprLit String
+    | ExprBinary String Expr Expr
+
+
 type Statement
-    = Statement String
+    = For Statement Expr Expr (List Statement)
+    | Assign String Expr
+    | Invoke String (List Expr)

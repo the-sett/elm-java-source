@@ -217,29 +217,6 @@ argsToDoc args =
         |> parens
 
 
-statementToDoc : Statement -> Doc
-statementToDoc statement =
-    case statement of
-        Statement expr ->
-            string expr
-                |+ eol
-
-
-statementsToDoc : Bool -> List Statement -> Doc
-statementsToDoc newlineCurlyBrace statementList =
-    List.map statementToDoc statementList
-        |> join (line)
-        |> indent 4
-        |> break
-        |> braces
-        |> append
-            (if newlineCurlyBrace then
-                line
-             else
-                empty
-            )
-
-
 commentMultilineToDoc : String -> Doc
 commentMultilineToDoc comment =
     string "/* "
@@ -271,3 +248,82 @@ importsToDoc : List String -> Doc
 importsToDoc imports =
     List.map importToDoc imports
         |> join (line)
+
+
+statementsToDoc : Bool -> List Statement -> Doc
+statementsToDoc newlineCurlyBrace statementList =
+    List.map statementToDoc statementList
+        |> join (line)
+        |> indent 4
+        |> break
+        |> braces
+        |> append
+            (if newlineCurlyBrace then
+                line
+             else
+                empty
+            )
+
+
+statementToDoc : Statement -> Doc
+statementToDoc statement =
+    case statement of
+        For init check next body ->
+            forToDoc init check next body
+
+        Assign var expr ->
+            assignToDoc var expr
+                |+ string ";"
+
+        Invoke method args ->
+            invokeToDoc method args
+                |+ string ";"
+
+
+forToDoc : Statement -> Expr -> Expr -> List Statement -> Doc
+forToDoc init check next body =
+    string "for ("
+        |+ statementToDoc init
+        |+ softline
+        |+ exprToDoc check
+        |+ string ";"
+        |+ softline
+        |+ exprToDoc next
+        |+ string ")"
+        |+ statementsToDoc True body
+
+
+assignToDoc : String -> Expr -> Doc
+assignToDoc var expr =
+    string var
+        |+ string " = "
+        |+ exprToDoc expr
+
+
+invokeToDoc : String -> List Expr -> Doc
+invokeToDoc method args =
+    string method
+        |+ (exprsToDoc commaSpace args |> parens)
+
+
+exprsToDoc : Doc -> List Expr -> Doc
+exprsToDoc separator exprs =
+    List.map exprToDoc exprs
+        |> join separator
+
+
+exprToDoc : Expr -> Doc
+exprToDoc expr =
+    case expr of
+        ExprStringLit val ->
+            string "\"" |+ string val |+ string "\""
+
+        ExprLit val ->
+            string val
+
+        ExprBinary op expr expr2 ->
+            exprToDoc expr
+                |+ space
+                |+ string op
+                |+ softline
+                |+ exprToDoc expr2

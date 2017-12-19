@@ -7,7 +7,6 @@ module JavaBuilder
         , initializer
         , constructor
         , method
-        , statement
         , header
         , package
         , imports
@@ -32,18 +31,29 @@ module JavaBuilder
         , annotationList
         , annotationNameValue
         , annotate
+          -- ===
+        , var
+        , string
+        , int
+        , for
+        , assign
+        , lt
+        , plus
+        , invoke
+        , postIncr
         )
 
 {-| A DSL for building Java code as an abstract syntax tree.
 @docs JavaSource
 @docs file, class, field, initializer, constructor, method
-@docs statement, header, package, imports, comment
+@docs header, package, imports, comment
 @docs public, protected, private
 @docs static, final, volatile, abstract, synchronized
 @docs extends, implements
 @docs args, arg, annArg, returnType, throws
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotate
+@docs var, string, int, for, assign, lt, plus, invoke, postIncr
 -}
 
 import Internal.JavaModel exposing (..)
@@ -318,13 +328,6 @@ method name attrs body =
     List.foldl (\attr -> \builder -> attr builder)
         (BuildMethod { defaultMethod | name = name, body = body })
         attrs
-
-
-{-| Creates a Java statement.
--}
-statement : String -> Statement
-statement val =
-    Statement val
 
 
 {-| Defines a header comment for a file.
@@ -648,3 +651,117 @@ annotate annotations builder =
 
             x ->
                 x
+
+
+
+--=================================================================
+
+
+{-| Variables
+-}
+var : String -> Expr
+var name =
+    ExprLit name
+
+
+{-| String literals
+-}
+string : String -> Expr
+string val =
+    ExprStringLit val
+
+
+
+-- float
+-- double
+-- char
+-- long
+-- true/false
+-- array initializers
+
+
+{-| Int literals
+-}
+int : Int -> Expr
+int x =
+    ExprLit <| toString x
+
+
+
+--while
+--do/while
+-- foreach
+
+
+{-| For loops
+-}
+for : ( Statement, Expr, Expr ) -> List Statement -> Statement
+for ( init, check, step ) body =
+    For init check step body
+
+
+
+-- if elseif else
+-- ternary
+-- switch/case
+-- break
+-- continue
+-- labels
+-- synchronized
+
+
+{-| Assignments
+-}
+assign : String -> Expr -> Statement
+assign var expr =
+    Assign var expr
+
+
+
+-- try/catch/finally - try with resources
+-- throw
+-- assert
+-- math
+
+
+{-| Less than
+-}
+lt : Expr -> Expr -> Expr
+lt left right =
+    ExprBinary "<" left right
+
+
+{-| Plus operator.
+-}
+plus : Expr -> Expr -> Expr
+plus left right =
+    ExprBinary "+" left right
+
+
+{-| Method invocation
+-}
+invoke : String -> List Expr -> Statement
+invoke method args =
+    Invoke method args
+
+
+
+-- unary
+
+
+{-| Post-inrement
+-}
+postIncr : String -> Expr
+postIncr var =
+    ExprLit <| var ++ "++"
+
+
+
+-- new
+-- generics with new
+-- generics with method calls
+-- super
+-- this
+-- return
+-- instanceof
+-- casts
