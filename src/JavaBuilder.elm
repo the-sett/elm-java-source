@@ -272,6 +272,7 @@ modifiers modifiers builder =
 
 
 -- === The DSL for building Java Source code models.
+-- Part1 - Files, classes, methods.
 
 
 {-| Creates a file layout for a file containing Java source code.
@@ -654,7 +655,8 @@ annotate annotations builder =
 
 
 
---=================================================================
+-- ====
+-- Part2 - Statements and expressions.
 
 
 {-| Variables
