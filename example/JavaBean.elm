@@ -59,7 +59,7 @@ consNoArg =
 
 getter field jtype =
     method ("get" ++ field)
-        [ comment ("Gets the " ++ field)
+        [ comment ("Gets the " ++ field ++ ".")
         , public
         , returnType jtype
         ]
@@ -69,7 +69,7 @@ getter field jtype =
 
 setter field jtype =
     method ("set" ++ field)
-        [ comment ("Sets the " ++ field)
+        [ comment ("Sets the " ++ field ++ ".")
         , public
         , returnType "void"
         , args [ arg ( jtype, field ) ]
