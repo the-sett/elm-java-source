@@ -41,6 +41,7 @@ module JavaBuilder
         , plus
         , invoke
         , postIncr
+        , return
         )
 
 {-| A DSL for building Java code as an abstract syntax tree.
@@ -53,7 +54,7 @@ module JavaBuilder
 @docs args, arg, annArg, returnType, throws
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotate
-@docs var, string, int, for, assign, lt, plus, invoke, postIncr
+@docs var, string, int, for, assign, lt, plus, invoke, postIncr, return
 -}
 
 import Internal.JavaModel exposing (..)
@@ -764,6 +765,15 @@ postIncr var =
 -- generics with method calls
 -- super
 -- this
--- return
+
+
+{-| Return
+-}
+return : Expr -> Statement
+return expr =
+    Return expr
+
+
+
 -- instanceof
 -- casts

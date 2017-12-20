@@ -279,6 +279,10 @@ statementToDoc statement =
             invokeToDoc method args
                 |+ string ";"
 
+        Return expr ->
+            returnToDoc expr
+                |+ string ";"
+
 
 forToDoc : Statement -> Expr -> Expr -> List Statement -> Doc
 forToDoc init check next body =
@@ -304,6 +308,13 @@ invokeToDoc : String -> List Expr -> Doc
 invokeToDoc method args =
     string method
         |+ (exprsToDoc commaSpace args |> parens)
+
+
+returnToDoc : Expr -> Doc
+returnToDoc expr =
+    string "return"
+        |+ softline
+        |+ exprToDoc expr
 
 
 exprsToDoc : Doc -> List Expr -> Doc

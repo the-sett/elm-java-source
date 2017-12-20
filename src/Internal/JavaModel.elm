@@ -115,3 +115,4 @@ type Statement
     = For Statement Expr Expr (List Statement)
     | Assign String Expr
     | Invoke String (List Expr)
+    | Return Expr

@@ -5,6 +5,13 @@ import JavaBuilder exposing (..)
 import JavaPrint exposing (javaSourceToString)
 
 
+-- Sorting and grouping of imports.
+-- Javadoc comments on class, fields and methods.
+-- @author, @param, @throws etc in javadocs.
+-- Comments in code.
+-- Customizing comments.
+
+
 main : Html Never
 main =
     div []
@@ -63,7 +70,7 @@ getter field jtype =
         , public
         , returnType jtype
         ]
-        [--return (var "id")
+        [ return (var "id")
         ]
 
 
