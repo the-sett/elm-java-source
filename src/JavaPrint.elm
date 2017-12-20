@@ -48,7 +48,7 @@ javaSourceToString (JavaSource file) =
 
 jFileToDoc : JavaFile -> Doc
 jFileToDoc file =
-    maybeDoc (commentMultilineToDoc >> flippend line) file.header
+    maybeDoc (javadocCommentToDoc >> flippend line) file.header
         |+ packageToDoc file.package
         |+ line
         |+ nonEmptyDoc (importsToDoc >> break) file.imports
@@ -127,7 +127,7 @@ modifiersToDoc modifiers =
 
 classToDoc : Class -> Doc
 classToDoc class =
-    maybeDoc (commentMultilineToDoc >> flippend line) class.comment
+    maybeDoc (javadocCommentToDoc >> flippend line) class.comment
         |+ nonEmptyDoc (annotationsToDoc line >> flippend line) class.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend space) class.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend space) class.modifiers
@@ -175,7 +175,7 @@ membersToDoc members =
 
 
 fieldToDoc field =
-    maybeDoc (commentMultilineToDoc >> flippend line) field.comment
+    maybeDoc (javadocCommentToDoc >> flippend line) field.comment
         |+ nonEmptyDoc (annotationsToDoc line >> flippend line) field.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend space) field.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend space) field.modifiers
@@ -187,7 +187,7 @@ fieldToDoc field =
 
 
 methodToDoc method =
-    maybeDoc (commentMultilineToDoc >> flippend line) method.comment
+    maybeDoc (javadocCommentToDoc >> flippend line) method.comment
         |+ nonEmptyDoc (annotationsToDoc line >> flippend line) method.annotations
         |+ maybeDoc (accessModifierToDoc >> flippend space) method.accessModifier
         |+ maybeDoc (modifiersToDoc >> flippend space) method.modifiers
@@ -199,7 +199,7 @@ methodToDoc method =
 
 
 initializerToDoc initializer =
-    maybeDoc (commentMultilineToDoc >> flippend line) initializer.comment
+    maybeDoc (javadocCommentToDoc >> flippend line) initializer.comment
         |+ maybeDoc (modifiersToDoc >> flippend space) initializer.modifiers
         |+ statementsToDoc False initializer.body
 
@@ -216,6 +216,13 @@ argsToDoc args =
         args
         |> join commaSpace
         |> parens
+
+
+javadocCommentToDoc : String -> Doc
+javadocCommentToDoc comment =
+    string "/** "
+        |+ string comment
+        |+ string " */"
 
 
 commentMultilineToDoc : String -> Doc
