@@ -5,9 +5,10 @@ import JavaBuilder exposing (..)
 import JavaPrint exposing (javaSourceToString)
 
 
--- Javadoc comments on class, fields and methods.
+-- String case functions.
+-- Ordering of class contents: fields, init blocks, constructors, publid, protected, private methods,
+--     inner classes.
 -- @author, @param, @throws etc in javadocs.
--- Customizing comments.
 
 
 main : Html Never
@@ -44,19 +45,11 @@ javaExample =
                 , annotation "JsonInclude" [ annotationNameValue "" "Include.NON_NULL" ]
                 ]
             ]
-            [ idField
-            , consNoArg
-            , getter "id" "Long"
-            , setter "id" "Long"
+            [ consNoArg
+            , withField "id" "Long" |> comment "Holds the database surrogate id."
+            , getter "id" "Long" |> comment "Gets the database surrogate id."
+            , setter "id" "Long" |> comment "Sets the database surrogate id."
             ]
-        ]
-
-
-idField =
-    field "Long"
-        "id"
-        [ comment "Holds the database surrogate id."
-        , private
         ]
 
 
@@ -69,9 +62,18 @@ consNoArg =
         ]
 
 
-getter field jtype =
-    method ("get" ++ field)
-        [ comment ("Gets the " ++ field ++ ".")
+withField : String -> String -> Builder
+withField fieldName jtype =
+    field "Long"
+        "id"
+        [ comment "Holds the id."
+        , private
+        ]
+
+
+getter fieldName jtype =
+    method ("get" ++ fieldName)
+        [ comment ("Gets the " ++ fieldName ++ ".")
         , public
         , returnType jtype
         ]
@@ -79,12 +81,12 @@ getter field jtype =
         ]
 
 
-setter field jtype =
-    method ("set" ++ field)
-        [ comment ("Sets the " ++ field ++ ".")
+setter fieldName jtype =
+    method ("set" ++ fieldName)
+        [ comment ("Sets the " ++ fieldName ++ ".")
         , public
         , returnType "void"
-        , args [ arg ( jtype, field ) ]
+        , args [ arg ( jtype, fieldName ) ]
         ]
-        [ assign ("this." ++ field) (var field)
+        [ assign ("this." ++ fieldName) (var fieldName)
         ]

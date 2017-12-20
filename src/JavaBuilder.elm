@@ -1,6 +1,8 @@
 module JavaBuilder
     exposing
         ( JavaSource
+        , Builder
+        , Attribute
         , file
         , class
         , field
@@ -47,7 +49,7 @@ module JavaBuilder
         )
 
 {-| A DSL for building Java code as an abstract syntax tree.
-@docs JavaSource
+@docs JavaSource, Builder, Attribute
 @docs file, class, field, initializer, constructor, method
 @docs header, package, imports, importStatics, comment
 @docs public, protected, private
@@ -72,6 +74,9 @@ type alias JavaSource =
 -- ==== Internal types and helper functions.
 
 
+{-| Constructors for the major parts of a Java source file, top-level file details,
+classes, fields, methods, constructors and initializer blocks.
+-}
 type Builder
     = BuildFile JavaFile
     | BuildClass Class
@@ -81,6 +86,11 @@ type Builder
     | BuildConstructor (String -> Method)
 
 
+{-| Attributes as functions over the major parts of a Java source file. Applying
+these functions modifies the builder if the attribute in question is allowed to be
+applied to that builder. If the attribute in question is not allowed to be applied
+to a builder, it is ignored.
+-}
 type alias Attribute =
     Builder -> Builder
 
