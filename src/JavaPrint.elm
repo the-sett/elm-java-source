@@ -35,13 +35,14 @@ import Internal.DocUtils
         , commaSoftline
         )
 import Internal.JavaModel exposing (..)
+import Internal.Imports exposing (sortUniqueAndGroup)
 
 
 {-| Pretty prints a Java syntax tree as text.
 -}
 javaSourceToString : JavaSource -> String
 javaSourceToString (JavaSource file) =
-    jFileToDoc file
+    jFileToDoc { file | imports = sortUniqueAndGroup file.imports }
         |> pretty 120
 
 

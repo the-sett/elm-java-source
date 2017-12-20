@@ -5,7 +5,6 @@ import JavaBuilder exposing (..)
 import JavaPrint exposing (javaSourceToString)
 
 
--- Sorting and grouping of imports.
 -- Javadoc comments on class, fields and methods.
 -- @author, @param, @throws etc in javadocs.
 -- Comments in code.
@@ -24,6 +23,10 @@ javaExample =
         [ package "com.analog.metermodel.model"
         , imports
             [ "java.io.Serializable"
+            , "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
+            , "com.fasterxml.jackson.annotation.JsonInclude"
+            , "com.thesett.util.entity.Entity"
+            , "io.swagger.annotations.ApiModelProperty"
             , "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
             , "com.fasterxml.jackson.annotation.JsonInclude"
             , "com.thesett.util.entity.Entity"
