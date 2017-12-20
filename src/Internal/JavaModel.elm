@@ -116,3 +116,4 @@ type Statement
     | Assign String Expr
     | Invoke String (List Expr)
     | Return Expr
+    | Comment String

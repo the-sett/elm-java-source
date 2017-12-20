@@ -43,6 +43,7 @@ module JavaBuilder
         , invoke
         , postIncr
         , return
+        , codeComment
         )
 
 {-| A DSL for building Java code as an abstract syntax tree.
@@ -55,7 +56,7 @@ module JavaBuilder
 @docs args, arg, annArg, returnType, throws
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotate
-@docs var, string, int, for, assign, lt, plus, invoke, postIncr, return
+@docs var, string, int, for, assign, lt, plus, invoke, postIncr, return, codeComment
 -}
 
 import Internal.JavaModel exposing (..)
@@ -798,3 +799,10 @@ return expr =
 
 -- instanceof
 -- casts
+
+
+{-| Inline code comments.
+-}
+codeComment : String -> Statement
+codeComment comment =
+    Comment comment

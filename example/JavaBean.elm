@@ -7,7 +7,6 @@ import JavaPrint exposing (javaSourceToString)
 
 -- Javadoc comments on class, fields and methods.
 -- @author, @param, @throws etc in javadocs.
--- Comments in code.
 -- Customizing comments.
 
 
@@ -66,7 +65,8 @@ consNoArg =
         [ comment "No-arg constructor for serialization."
         , public
         ]
-        []
+        [ codeComment "No-arg constructor for serialization."
+        ]
 
 
 getter field jtype =

@@ -302,6 +302,9 @@ statementToDoc statement =
             returnToDoc expr
                 |+ string ";"
 
+        Comment comment ->
+            codeCommentToDoc comment
+
 
 forToDoc : Statement -> Expr -> Expr -> List Statement -> Doc
 forToDoc init check next body =
@@ -334,6 +337,12 @@ returnToDoc expr =
     string "return"
         |+ softline
         |+ exprToDoc expr
+
+
+codeCommentToDoc : String -> Doc
+codeCommentToDoc comment =
+    string "// "
+        |+ string comment
 
 
 exprsToDoc : Doc -> List Expr -> Doc
