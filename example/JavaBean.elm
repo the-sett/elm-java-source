@@ -26,9 +26,11 @@ javaExample =
             [ "java.io.Serializable"
             , "com.fasterxml.jackson.annotation.JsonIgnoreProperties"
             , "com.fasterxml.jackson.annotation.JsonInclude"
-            , "static com.fasterxml.jackson.annotation.JsonInclude.Include"
             , "com.thesett.util.entity.Entity"
             , "io.swagger.annotations.ApiModelProperty"
+            ]
+        , importStatics
+            [ "com.fasterxml.jackson.annotation.JsonInclude.Include"
             ]
         ]
         [ class "SomeEntity"

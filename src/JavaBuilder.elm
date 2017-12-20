@@ -10,6 +10,7 @@ module JavaBuilder
         , header
         , package
         , imports
+        , importStatics
         , comment
         , public
         , protected
@@ -47,7 +48,7 @@ module JavaBuilder
 {-| A DSL for building Java code as an abstract syntax tree.
 @docs JavaSource
 @docs file, class, field, initializer, constructor, method
-@docs header, package, imports, comment
+@docs header, package, imports, importStatics, comment
 @docs public, protected, private
 @docs static, final, volatile, abstract, synchronized
 @docs extends, implements
@@ -356,16 +357,36 @@ package val builder =
             x
 
 
-{-| Adds a list of imports to a file .
+{-| Adds a list of imports to a file.
 -}
 imports : List String -> Attribute
 imports imports builder =
-    case builder of
-        BuildFile file ->
-            BuildFile { file | imports = imports }
+    let
+        nonStaticImports =
+            List.map (\imp -> ( imp, False )) imports
+    in
+        case builder of
+            BuildFile file ->
+                BuildFile { file | imports = nonStaticImports :: file.imports }
 
-        x ->
-            x
+            x ->
+                x
+
+
+{-| Adds a list of static imports to a file.
+-}
+importStatics : List String -> Attribute
+importStatics imports builder =
+    let
+        staticImports =
+            List.map (\imp -> ( imp, True )) imports
+    in
+        case builder of
+            BuildFile file ->
+                BuildFile { file | imports = staticImports :: file.imports }
+
+            x ->
+                x
 
 
 {-| Adds a comment to a class, initializer block, method or constructor.

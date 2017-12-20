@@ -23,7 +23,7 @@ type JavaSource
 type alias JavaFile =
     { header : Maybe String
     , package : String
-    , imports : List String
+    , imports : List (List ( String, Bool ))
     , classes : List Class
     }
 

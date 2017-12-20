@@ -237,17 +237,28 @@ packageToDoc package =
         |+ eol
 
 
-importToDoc : String -> Doc
-importToDoc importName =
-    string "import "
+importToDoc : ( String, Bool ) -> Doc
+importToDoc ( importName, isStatic ) =
+    string
+        (if isStatic then
+            "import static "
+         else
+            "import "
+        )
         |+ string importName
         |+ eol
 
 
-importsToDoc : List String -> Doc
-importsToDoc imports =
+importGroupToDoc : List ( String, Bool ) -> Doc
+importGroupToDoc imports =
     List.map importToDoc imports
-        |> join (line)
+        |> join line
+
+
+importsToDoc : List (List ( String, Bool )) -> Doc
+importsToDoc importGroups =
+    List.map importGroupToDoc importGroups
+        |> join (line |+ line)
 
 
 statementsToDoc : Bool -> List Statement -> Doc
