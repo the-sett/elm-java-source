@@ -3,9 +3,9 @@ module JavaBean exposing (..)
 import Html exposing (Html, div, text, pre)
 import JavaBuilder exposing (..)
 import JavaPrint exposing (javaSourceToString)
+import String.Case exposing (..)
 
 
--- String case functions.
 -- Ordering of class contents: fields, init blocks, constructors, publid, protected, private methods,
 --     inner classes.
 -- @author, @param, @throws etc in javadocs.
@@ -15,6 +15,14 @@ main : Html Never
 main =
     div []
         [ pre [] [ text <| javaSourceToString javaExample ] ]
+
+
+ccu =
+    toCamelCaseUpper
+
+
+cc =
+    toCamelCaseLower
 
 
 javaExample : JavaSource
@@ -72,7 +80,7 @@ withField fieldName jtype =
 
 
 getter fieldName jtype =
-    method ("get" ++ fieldName)
+    method ("get" ++ (ccu fieldName))
         [ comment ("Gets the " ++ fieldName ++ ".")
         , public
         , returnType jtype
@@ -82,7 +90,7 @@ getter fieldName jtype =
 
 
 setter fieldName jtype =
-    method ("set" ++ fieldName)
+    method ("set" ++ (ccu fieldName))
         [ comment ("Sets the " ++ fieldName ++ ".")
         , public
         , returnType "void"
