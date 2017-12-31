@@ -15,7 +15,7 @@
         "elm-community/maybe-extra": "3.0.0 <= v < 4.0.0",
         "elm-community/list-extra": "7.0.0 <= v < 8.0.0",
         "the-sett/elm-pretty-printer": "1.0.0 <= v < 2.0.0",
-        "the-sett/elm-name-case": "1.0.0 <= v < 2.0.0"
+        "the-sett/elm-string-case": "1.0.0 <= v < 2.0.0"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
