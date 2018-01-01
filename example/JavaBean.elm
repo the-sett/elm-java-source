@@ -6,6 +6,7 @@ import JavaPrint exposing (javaSourceToString)
 import String.Case exposing (..)
 
 
+-- Default values in annotations, get rid of base " = "
 -- Ordering of class contents: fields, init blocks, constructors, publid, protected, private methods,
 --     inner classes.
 -- @author, @param, @throws etc in javadocs.
