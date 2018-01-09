@@ -81,21 +81,35 @@ withField fieldName jtype =
 
 
 getter fieldName jtype =
-    method ("get" ++ (ccu fieldName))
-        [ comment ("Gets the " ++ fieldName ++ ".")
-        , public
-        , returnType jtype
-        ]
-        [ return (var "id")
-        ]
+    let
+        ccuFieldName =
+            ccu fieldName
+
+        ccFieldName =
+            cc fieldName
+    in
+        method ("get" ++ ccuFieldName)
+            [ comment ("Gets the " ++ ccFieldName ++ ".")
+            , public
+            , returnType jtype
+            ]
+            [ return (var ccFieldName)
+            ]
 
 
 setter fieldName jtype =
-    method ("set" ++ (ccu fieldName))
-        [ comment ("Sets the " ++ fieldName ++ ".")
-        , public
-        , returnType "void"
-        , args [ arg ( jtype, fieldName ) ]
-        ]
-        [ assign ("this." ++ fieldName) (var fieldName)
-        ]
+    let
+        ccuFieldName =
+            ccu fieldName
+
+        ccFieldName =
+            cc fieldName
+    in
+        method ("set" ++ ccuFieldName)
+            [ comment ("Sets the " ++ ccFieldName ++ ".")
+            , public
+            , returnType "void"
+            , args [ arg ( jtype, ccFieldName ) ]
+            ]
+            [ assign ("this." ++ ccFieldName) (var ccFieldName)
+            ]
