@@ -36,6 +36,7 @@ import Internal.DocUtils
         )
 import Internal.JavaModel exposing (..)
 import Internal.Imports exposing (sortUniqueAndGroup)
+import Internal.MemberOrdering exposing (sortMembers)
 
 
 {-| Pretty prints a Java syntax tree as text.
@@ -167,7 +168,7 @@ memberToDoc member =
 
 membersToDoc : List Member -> Doc
 membersToDoc members =
-    List.map memberToDoc members
+    List.map memberToDoc (sortMembers members)
         |> join (line |+ line)
         |> indent 4
         |> break
