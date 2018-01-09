@@ -49,7 +49,7 @@ javaSourceToString (JavaSource file) =
 
 jFileToDoc : JavaFile -> Doc
 jFileToDoc file =
-    maybeDoc (javadocCommentToDoc >> flippend line) file.header
+    maybeDoc (commentMultilineToDoc >> flippend line) file.header
         |+ packageToDoc file.package
         |+ line
         |+ nonEmptyDoc (importsToDoc >> break) file.imports
@@ -200,7 +200,7 @@ methodToDoc method =
 
 
 initializerToDoc initializer =
-    maybeDoc (javadocCommentToDoc >> flippend line) initializer.comment
+    maybeDoc (commentMultilineToDoc >> flippend line) initializer.comment
         |+ maybeDoc (modifiersToDoc >> flippend space) initializer.modifiers
         |+ statementsToDoc False initializer.body
 
@@ -219,10 +219,10 @@ argsToDoc args =
         |> parens
 
 
-javadocCommentToDoc : String -> Doc
-javadocCommentToDoc comment =
+javadocCommentToDoc : JavaDoc -> Doc
+javadocCommentToDoc javaDoc =
     string "/** "
-        |+ string comment
+        |+ string javaDoc.text
         |+ string " */"
 
 

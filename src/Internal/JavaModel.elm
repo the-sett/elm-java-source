@@ -6,6 +6,7 @@ module Internal.JavaModel
         , Method
         , Field
         , Initializer
+        , JavaDoc
         , Annotation
         , AnnotationExpr(..)
         , Member(..)
@@ -29,7 +30,7 @@ type alias JavaFile =
 
 
 type alias Class =
-    { comment : Maybe String
+    { comment : Maybe JavaDoc
     , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
@@ -41,7 +42,7 @@ type alias Class =
 
 
 type alias Method =
-    { comment : Maybe String
+    { comment : Maybe JavaDoc
     , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
@@ -54,13 +55,18 @@ type alias Method =
 
 
 type alias Field =
-    { comment : Maybe String
+    { comment : Maybe JavaDoc
     , annotations : List Annotation
     , accessModifier : Maybe AccessModifier
     , modifiers : Maybe Modifiers
     , name : String
     , fieldType : String
     , initialValue : Maybe String
+    }
+
+
+type alias JavaDoc =
+    { text : String
     }
 
 

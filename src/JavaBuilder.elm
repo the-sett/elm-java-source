@@ -406,24 +406,27 @@ importStatics imports builder =
 comment : String -> Attribute
 comment val builder =
     let
+        addJavaDocComment val rec =
+            { rec | comment = Just { text = val } }
+
         addComment val rec =
             { rec | comment = Just val }
     in
         case builder of
             BuildClass class ->
-                BuildClass <| addComment val class
+                BuildClass <| addJavaDocComment val class
 
             BuildField field ->
-                BuildField <| addComment val field
+                BuildField <| addJavaDocComment val field
 
             BuildInitializer initializer ->
                 BuildInitializer <| addComment val initializer
 
             BuildConstructor consBuilder ->
-                BuildConstructor <| consBuilder >> (addComment val)
+                BuildConstructor <| consBuilder >> (addJavaDocComment val)
 
             BuildMethod method ->
-                BuildMethod <| addComment val method
+                BuildMethod <| addJavaDocComment val method
 
             x ->
                 x
