@@ -51,7 +51,7 @@ javaExample =
             , implements [ "Entity<Long>", "Serializable" ]
             , annotate
                 [ annotation "JsonIgnoreProperties" [ annotationNameValue "ignoreUnknown" "true" ]
-                , annotation "JsonInclude" [ annotationNameValue "" "Include.NON_NULL" ]
+                , annotation "JsonInclude" [ annotationDefaultValue "Include.NON_NULL" ]
                 ]
             ]
             [ consNoArg

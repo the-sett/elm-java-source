@@ -33,6 +33,7 @@ module JavaBuilder
         , annotation
         , annotationList
         , annotationNameValue
+        , annotationDefaultValue
         , annotate
           -- ===
         , var
@@ -57,7 +58,7 @@ module JavaBuilder
 @docs extends, implements
 @docs args, arg, annArg, returnType, throws
 @docs initialValue
-@docs annotation, annotationList, annotationNameValue, annotate
+@docs annotation, annotationList, annotationNameValue, annotationDefaultValue, annotate
 @docs var, string, int, for, assign, lt, plus, invoke, postIncr, return, codeComment
 -}
 
@@ -660,6 +661,13 @@ annotationList annotations annotation =
 annotationNameValue : String -> String -> AnnotationBuilder
 annotationNameValue name value annotation =
     { annotation | args = List.append annotation.args [ ( Just name, AnnExprString value ) ] }
+
+
+{-| Adds a default argument to an annotation.
+-}
+annotationDefaultValue : String -> AnnotationBuilder
+annotationDefaultValue value annotation =
+    { annotation | args = List.append annotation.args [ ( Nothing, AnnExprString value ) ] }
 
 
 {-| Annotates a class, field, constructor or method.
