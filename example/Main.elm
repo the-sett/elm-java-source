@@ -36,12 +36,12 @@ javaExample =
                 , namedQueries
                 ]
             ]
-            [ staticField
-            , staticInitBlock
-            , consWithArg
+            [ innerClass
+            , staticField
             , mainMethod
+            , staticInitBlock
             , methodArgsWithAnnotation
-            , innerClass
+            , consWithArg
             ]
         ]
 
