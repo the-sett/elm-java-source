@@ -36,6 +36,8 @@ module JavaBuilder
         , annotate
         , comment
         , jdocParam
+        , jdocReturns
+        , jdocThrows
           -- ===
         , var
         , string
@@ -61,7 +63,7 @@ module JavaBuilder
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotationDefaultValue, annotate
 @docs var, string, int, for, assign, lt, plus, invoke, postIncr, return, codeComment
-@docs comment, jdocParam
+@docs comment, jdocParam, jdocReturns, jdocThrows
 -}
 
 import Internal.JavaModel exposing (..)
@@ -439,25 +441,85 @@ comment val builder =
                 x
 
 
-{-| Adds a @param javadoc tag to a javadoc comment.
+{-| Adds a javadoc tag to records which may have javdoc comments.
+-}
+addJavaDocTag : String -> List String -> { a | comment : Maybe JavaDoc } -> { a | comment : Maybe JavaDoc }
+addJavaDocTag tagName tagParams rec =
+    case rec.comment of
+        Nothing ->
+            { rec | comment = Just { text = "", tags = [ ( tagName, tagParams ) ] } }
+
+        Just javadoc ->
+            { rec | comment = Just { javadoc | tags = ( tagName, tagParams ) :: javadoc.tags } }
+
+
+{-| Adds a javadoc tag to builders that allow javadoc tags.
+-}
+jdocTag : String -> List String -> Attribute
+jdocTag tagName tagParams builder =
+    case builder of
+        BuildConstructor consBuilder ->
+            BuildConstructor <| consBuilder >> (addJavaDocTag tagName tagParams)
+
+        BuildMethod method ->
+            BuildMethod <| addJavaDocTag tagName tagParams method
+
+        x ->
+            x
+
+
+{-| Adds a @param javadoc tag to a javadoc comment on a method or constructor.
 -}
 jdocParam : String -> String -> Attribute
 jdocParam arg comment builder =
     let
-        addJavaDocTag tagName tagParams rec =
-            case rec.comment of
-                Nothing ->
-                    { rec | comment = Just { text = "", tags = [ ( tagName, tagParams ) ] } }
-
-                Just javadoc ->
-                    { rec | comment = Just { javadoc | tags = ( tagName, tagParams ) :: javadoc.tags } }
+        tag =
+            jdocTag "param" [ arg, comment ]
     in
         case builder of
             BuildConstructor consBuilder ->
-                BuildConstructor <| consBuilder >> (addJavaDocTag "param" [ arg, comment ])
+                tag <| BuildConstructor consBuilder
 
             BuildMethod method ->
-                BuildMethod <| addJavaDocTag "param" [ arg, comment ] method
+                tag <| BuildMethod method
+
+            x ->
+                x
+
+
+{-| Adds a @returns javadoc tag to a javadoc comment on a method or constructor.
+-}
+jdocReturns : String -> Attribute
+jdocReturns comment builder =
+    let
+        tag =
+            jdocTag "returns" [ comment ]
+    in
+        case builder of
+            BuildConstructor consBuilder ->
+                tag <| BuildConstructor consBuilder
+
+            BuildMethod method ->
+                tag <| BuildMethod method
+
+            x ->
+                x
+
+
+{-| Adds a @throws javadoc tag to a javadoc comment on a method or constructor.
+-}
+jdocThrows : String -> String -> Attribute
+jdocThrows exception comment builder =
+    let
+        tag =
+            jdocTag "param" [ exception, comment ]
+    in
+        case builder of
+            BuildConstructor consBuilder ->
+                tag <| BuildConstructor consBuilder
+
+            BuildMethod method ->
+                tag <| BuildMethod method
 
             x ->
                 x

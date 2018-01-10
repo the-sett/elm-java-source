@@ -77,6 +77,7 @@ withField fieldName jtype =
         ]
 
 
+getter : String -> String -> Builder
 getter fieldName jtype =
     let
         ccuFieldName =
@@ -87,6 +88,7 @@ getter fieldName jtype =
     in
         method ("get" ++ ccuFieldName)
             [ comment ("Gets the " ++ ccFieldName ++ ".")
+            , jdocReturns <| "The " ++ ccFieldName ++ "."
             , public
             , returnType jtype
             ]
@@ -94,6 +96,7 @@ getter fieldName jtype =
             ]
 
 
+setter : String -> String -> Builder
 setter fieldName jtype =
     let
         ccuFieldName =
