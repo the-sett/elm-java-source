@@ -222,8 +222,34 @@ argsToDoc args =
 javadocCommentToDoc : JavaDoc -> Doc
 javadocCommentToDoc javaDoc =
     string "/** "
+        |+ line
+        |+ string " * "
         |+ string javaDoc.text
+        |+ nonEmptyDoc javadocTagsToDoc javaDoc.tags
+        |+ line
         |+ string " */"
+
+
+javadocTagsToDoc : List ( String, List String ) -> Doc
+javadocTagsToDoc tags =
+    let
+        javadocTagParamsToDoc tagParams =
+            List.map (\tagParam -> string tagParam) tagParams
+                |> join space
+    in
+        List.map
+            (\( tagName, tagParams ) ->
+                string " * "
+                    |+ string "@"
+                    |+ string tagName
+                    |+ space
+                    |+ javadocTagParamsToDoc tagParams
+            )
+            tags
+            |> join line
+            |> append line
+            |> append (string " * ")
+            |> append line
 
 
 commentMultilineToDoc : String -> Doc

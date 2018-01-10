@@ -67,6 +67,7 @@ type alias Field =
 
 type alias JavaDoc =
     { text : String
+    , tags : List ( String, List String )
     }
 
 

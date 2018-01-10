@@ -13,7 +13,6 @@ module JavaBuilder
         , package
         , imports
         , importStatics
-        , comment
         , public
         , protected
         , private
@@ -35,6 +34,8 @@ module JavaBuilder
         , annotationNameValue
         , annotationDefaultValue
         , annotate
+        , comment
+        , jdocParam
           -- ===
         , var
         , string
@@ -52,7 +53,7 @@ module JavaBuilder
 {-| A DSL for building Java code as an abstract syntax tree.
 @docs JavaSource, Builder, Attribute
 @docs file, class, field, initializer, constructor, method
-@docs header, package, imports, importStatics, comment
+@docs header, package, imports, importStatics
 @docs public, protected, private
 @docs static, final, volatile, abstract, synchronized
 @docs extends, implements
@@ -60,6 +61,7 @@ module JavaBuilder
 @docs initialValue
 @docs annotation, annotationList, annotationNameValue, annotationDefaultValue, annotate
 @docs var, string, int, for, assign, lt, plus, invoke, postIncr, return, codeComment
+@docs comment, jdocParam
 -}
 
 import Internal.JavaModel exposing (..)
@@ -407,7 +409,12 @@ comment : String -> Attribute
 comment val builder =
     let
         addJavaDocComment val rec =
-            { rec | comment = Just { text = val } }
+            case rec.comment of
+                Nothing ->
+                    { rec | comment = Just { text = val, tags = [] } }
+
+                Just javadoc ->
+                    { rec | comment = Just { javadoc | text = val } }
 
         addComment val rec =
             { rec | comment = Just val }
@@ -427,6 +434,30 @@ comment val builder =
 
             BuildMethod method ->
                 BuildMethod <| addJavaDocComment val method
+
+            x ->
+                x
+
+
+{-| Adds a @param javadoc tag to a javadoc comment.
+-}
+jdocParam : String -> String -> Attribute
+jdocParam arg comment builder =
+    let
+        addJavaDocTag tagName tagParams rec =
+            case rec.comment of
+                Nothing ->
+                    { rec | comment = Just { text = "", tags = [ ( tagName, tagParams ) ] } }
+
+                Just javadoc ->
+                    { rec | comment = Just { javadoc | tags = ( tagName, tagParams ) :: javadoc.tags } }
+    in
+        case builder of
+            BuildConstructor consBuilder ->
+                BuildConstructor <| consBuilder >> (addJavaDocTag "param" [ arg, comment ])
+
+            BuildMethod method ->
+                BuildMethod <| addJavaDocTag "param" [ arg, comment ] method
 
             x ->
                 x

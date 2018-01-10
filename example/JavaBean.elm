@@ -104,6 +104,7 @@ setter fieldName jtype =
     in
         method ("set" ++ ccuFieldName)
             [ comment ("Sets the " ++ ccFieldName ++ ".")
+            , jdocParam ccFieldName "The new value to set."
             , public
             , returnType "void"
             , args [ arg ( jtype, ccFieldName ) ]
