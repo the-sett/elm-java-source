@@ -6,9 +6,6 @@ import JavaPrint exposing (javaSourceToString)
 import String.Case exposing (..)
 
 
--- @author, @param, @throws etc in javadocs.
-
-
 main : Html Never
 main =
     div []
